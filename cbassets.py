@@ -12,17 +12,16 @@ accounts = client.get_accounts(limit='100')
 # https://forums.coinbasecloud.dev/t/client-get-accounts-only-gives-certain-cryptos-for-output/890/4
 
 data = accounts.data
-#print(accounts)
 
 accounts = {key.balance.currency:[key.currency.name, key.balance.amount] for key in data}
 
 # Clean assets so that accounts with no amount of cryptocurrency (0) are removed
-def cleanAssets():
+def cleanAssets(portfolio):
     # print(f"Before: {len(accounts)}\n")
     # pprint.pprint(accounts)
     clean_accounts = {}
 
-    for key, value in accounts.items():
+    for key, value in portfolio.items():
         if float(value[1]) != 0:
             clean_accounts[key] = value
 
@@ -55,7 +54,13 @@ def totalBalance(portfolio):
     return "$" + str(sum([float(value[2]) for key, value in portfolio.items()])) + " USD"
 
 # Prints assets and all details of portfolio into terminal 
-def showAssets(portfolio):
+def showAssets(accounts):
+
+    clean_accounts = cleanAssets(accounts)
+    prices = getPrices(clean_accounts)
+    accounts = loadPrices(clean_accounts, prices)
+    portfolio = loadBalance(accounts, prices)
+
     # Symbol | Name | Amount | Balance | Real-Time Price
     header = f"{'Symbol':<5} | {'Name':<25} | {'Amount':<12} | {'Balance':<11} | {'Real-Time Price':<15}"
     print(header)
@@ -71,9 +76,9 @@ def showAssets(portfolio):
     print(f"Total Balance: {totalBalance(portfolio)}\n")
 
 if __name__ == '__main__':
-    clean_accounts = cleanAssets()
-    prices = getPrices(clean_accounts)
-    accounts = loadPrices(clean_accounts, prices)
-    accounts = loadBalance(accounts, prices)
+    # clean_accounts = cleanAssets(accounts)
+    # prices = getPrices(clean_accounts)
+    # accounts = loadPrices(clean_accounts, prices)
+    # accounts = loadBalance(accounts, prices)
 
     showAssets(accounts)

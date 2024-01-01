@@ -44,3 +44,46 @@ def getPrices(dictionary):
         print(e)
 
     return prices
+
+# for Gemini
+def loadNames(dictionary):
+
+    keys = list(dictionary.keys())
+    symbolString = ','.join(keys) # String of comma-separated symbols for parameter call
+
+    parameters = {
+        'symbol': symbolString,
+        'convert':'USD',
+        'skip_invalid':'true'
+    }
+
+    headers = {
+        'Accepts':'application/json',
+        'X-CMC_PRO_API_KEY':api_key
+    }
+
+    prices = []
+
+    # Initialize Session
+    session = Session()
+    session.headers.update(headers)
+
+    portfolio = {}
+
+    try:
+        response = session.get(url, params=parameters)
+        data = json.loads(response.text)
+        data = data['data']
+
+        for i in range(len(keys)):
+            symbol = keys[i]
+            name = data[symbol][0]['name']
+            #coinPrice = data[keys[i]][0]['quote']['USD']['price']
+            dictionary[symbol] = [name, dictionary[symbol]]
+        
+    except(ConnectionError, Timeout, TooManyRedirects) as e:
+        print(e)
+    
+    return dictionary
+
+
