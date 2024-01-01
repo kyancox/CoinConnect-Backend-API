@@ -9,6 +9,8 @@ from gem_sec import api_key, api_secret
 import pprint
 from cmc import loadNames
 
+from portfolio import Portfolio
+
 url = "https://api.gemini.com/v1/balances"
 
 api_secret = api_secret.encode()
@@ -41,10 +43,11 @@ except (ConnectionError, Timeout, TooManyRedirects) as e:
 
 balances = {balances[i]['currency']:balances[i]['amount'] for i in range(1, len(balances))}
 
-pprint.pprint(balances)
-
 balances = loadNames(balances)
 
-print(balances)
+gemini = Portfolio("Gemini", balances)
+
+gemini.showAssets()
+
 
 
