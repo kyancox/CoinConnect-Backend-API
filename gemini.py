@@ -5,11 +5,11 @@ import base64
 import hmac
 import hashlib
 import datetime, time
-from gem_sec import api_key, api_secret
+from gemini_sec import api_key, api_secret
 import pprint
 from cmc import loadNames
 
-from portfolio import Portfolio
+from portfolioClass import Portfolio
 
 url = "https://api.gemini.com/v1/balances"
 
@@ -40,14 +40,13 @@ try:
 except (ConnectionError, Timeout, TooManyRedirects) as e:
     print(e)
 
-
 balances = {balances[i]['currency']:balances[i]['amount'] for i in range(1, len(balances))}
-
 balances = loadNames(balances)
 
 gemini = Portfolio("Gemini", balances)
 
-gemini.showAssets()
+if __name__ == '__main__':
+    gemini.showAssets()
 
 
 

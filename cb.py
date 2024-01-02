@@ -1,0 +1,36 @@
+from coinbase.wallet.client import Client
+from cb_sec import api_key, api_secret
+import pprint
+from portfolioClass import Portfolio
+
+# Coinbase API V2
+
+client = Client(api_key, api_secret)
+
+accounts = client.get_accounts(limit='100')
+# https://stackoverflow.com/questions/67343099/coinbase-api-btc-account-missing
+# https://forums.coinbasecloud.dev/t/client-get-accounts-only-gives-certain-cryptos-for-output/890/4
+
+data = accounts.data
+
+accounts = {key.balance.currency:[key.currency.name, key.balance.amount] for key in data}
+
+coinbase = Portfolio("Coinbase", accounts)
+
+if __name__ == '__main__':
+    # coinbase.loadData()
+    # #pprint.pprint(coinbase.getPortfolio())
+    # portfolio = coinbase.getPortfolio()
+
+    # #pprint.pprint(portfolio)
+
+    # sortedPortfolio = sorted(portfolio.items(), key = lambda coin: float(coin[1][2]), reverse = True)
+
+
+
+    # sortedPortfolio = (dict(portfolio))
+
+    # #pprint.pprint(dict(portfolio))
+    coinbase.showAssets()
+
+
