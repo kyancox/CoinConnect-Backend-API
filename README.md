@@ -1,4 +1,4 @@
-# Coinbase Assets in Terminal
+# Coinbase, Gemini, and Ledger Live Assets in Terminal
 
 ## Description
 
