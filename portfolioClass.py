@@ -88,9 +88,11 @@ from collections import defaultdict
 # Uses OOP Principles like Inheritance and Composition 
 class MasterPortfolio(Portfolio):
     
-
     def __init__(self, accounts):
+        if type(accounts) != list or type(accounts[0]) != Portfolio: raise TypeError()
+
         self.accounts = accounts
+
         self.exchangeData = defaultdict(list)
         self.balances = defaultdict(float)
         self.portfolio = {}
@@ -146,7 +148,7 @@ class MasterPortfolio(Portfolio):
         self.setExchangeData()
         self.setBalances()
         self.removeZeros()
-        self.portfolio = loadNames(self.balances)
+        self.portfolio = cmc.loadNames(self.balances)
         self.loadPrices()
         self.loadBalance()
 
