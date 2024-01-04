@@ -184,7 +184,7 @@ class MasterPortfolio(Portfolio):
             masterDF = pd.DataFrame(self.portfolioToDataframe())
             masterDF.to_excel(writer, sheet_name = 'Master', index=False)
 
-            for column_width in [("A:A", 10), ("B:B", 25), ("C:C", 15), ("D:D", 25), ("E:E", 25), ("F:F", 25)]:
+            for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25), ("E:E", 25), ("F:F", 25)]:
                 writer.sheets['Master'].set_column(*column_width)
 
             for account in self.accounts:
@@ -192,7 +192,7 @@ class MasterPortfolio(Portfolio):
                 accountDF = pd.DataFrame(account.portfolioToDataframe())
                 accountDF.to_excel(writer, sheet_name=account.accountName, index=False)
 
-                for column_width in [("A:A", 10), ("B:B", 25), ("C:C", 15), ("D:D", 25), ("E:E", 25)]:
+                for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25), ("E:E", 25)]:
                     writer.sheets[account.accountName].set_column(*column_width)
 
         print("Export complete.\n")
