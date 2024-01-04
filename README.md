@@ -1,7 +1,7 @@
 # Coinbase, Gemini, and Ledger Live Assets in Terminal
 
 ## Technologies Used
-APIs Used: Coinbase REST API, Gemini REST API, CoinMarketCap REST API
+APIs: Coinbase REST API, Gemini REST API, CoinMarketCap REST API
 
 Python Libraries: pandas, xlsxwriter, datetime, collections, pprint, requests, json
 
