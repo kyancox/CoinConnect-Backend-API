@@ -2,6 +2,7 @@
 
 ## Technologies Used
 APIs Used: Coinbase REST API, Gemini REST API, CoinMarketCap REST API
+
 Python Libraries: pandas, xlsxwriter, datetime, collections, pprint, requests, json
 
 ## Description (outdated)
