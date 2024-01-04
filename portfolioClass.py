@@ -102,6 +102,7 @@ class Portfolio:
 
 from collections import defaultdict
 import pandas as pd
+import xlsxwriter
 
 # Uses OOP Principles like Inheritance and Composition 
 class MasterPortfolio(Portfolio):
@@ -176,15 +177,22 @@ class MasterPortfolio(Portfolio):
         print("Exporting Excel file.\n")
 
         if not self.dataLoaded: self.loadData()
-        
-        masterDF = pd.DataFrame(self.portfolioToDataframe())
 
         current_time = datetime.now().strftime("%m-%d-%Y %H:%M")
-        with pd.ExcelWriter(f'/Users/kyancox/Downloads/output {current_time}.xlsx') as writer:
+        fileName = f'/Users/kyancox/Downloads/output {current_time}.xlsx'
+        with pd.ExcelWriter(fileName, engine='xlsxwriter') as writer:
+            masterDF = pd.DataFrame(self.portfolioToDataframe())
             masterDF.to_excel(writer, sheet_name = 'Master', index=False)
+
+            for column_width in [("A:A", 10), ("B:B", 25), ("C:C", 15), ("D:D", 25), ("E:E", 25), ("F:F", 25)]:
+                writer.sheets['Master'].set_column(*column_width)
 
             for account in self.accounts:
                 account.loadData()
-                pd.DataFrame(account.portfolioToDataframe()).to_excel(writer, sheet_name=account.accountName, index=False)
+                accountDF = pd.DataFrame(account.portfolioToDataframe())
+                accountDF.to_excel(writer, sheet_name=account.accountName, index=False)
+
+                for column_width in [("A:A", 10), ("B:B", 25), ("C:C", 15), ("D:D", 25), ("E:E", 25)]:
+                    writer.sheets[account.accountName].set_column(*column_width)
 
         print("Export complete.\n")
