@@ -180,9 +180,18 @@ class MasterPortfolio(Portfolio):
 
         current_time = datetime.now().strftime("%m-%d-%Y %H:%M")
         fileName = f'/Users/kyancox/Downloads/output {current_time}.xlsx'
+        
         with pd.ExcelWriter(fileName, engine='xlsxwriter') as writer:
             masterDF = pd.DataFrame(self.portfolioToDataframe())
             masterDF.to_excel(writer, sheet_name = 'Master', index=False)
+
+            total_balance = float(self.totalBalance().replace("$", "").replace(" USD", ""))
+            balance_column = 3
+            next_row = len(masterDF) + 2
+            worksheet = writer.sheets['Master']
+
+            worksheet.write(next_row, balance_column, total_balance)
+            worksheet.write(next_row, balance_column - 1, "Total Balance:")
 
             for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25), ("E:E", 25), ("F:F", 25)]:
                 writer.sheets['Master'].set_column(*column_width)
@@ -191,6 +200,12 @@ class MasterPortfolio(Portfolio):
                 account.loadData()
                 accountDF = pd.DataFrame(account.portfolioToDataframe())
                 accountDF.to_excel(writer, sheet_name=account.accountName, index=False)
+
+                total_balance = float(account.totalBalance().replace("$", "").replace(" USD", ""))
+                worksheet = writer.sheets[account.accountName]
+
+                worksheet.write(next_row, balance_column, total_balance)
+                worksheet.write(next_row, balance_column - 1, "Total Balance:")
 
                 for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25), ("E:E", 25)]:
                     writer.sheets[account.accountName].set_column(*column_width)
