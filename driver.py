@@ -11,9 +11,6 @@ def read_valid_int(prompt, min, max):
         value = int(userInput)
         if value >= min and value <= max:
             return value
-        # For fun
-        if value > 1000000:
-            print("Please, 1please, please do not invest more than $1,000,000 at a time.")
     # If input is not a digit within min and max, the return message prompts the user to try again.
     return read_valid_int(f"Please enter your choice as an integer between {min} and {max}: ", min, max) 
 
@@ -29,7 +26,7 @@ def main():
           
           """)
     input = read_valid_int("Choose an option: ", 1, 5)
-    print()
+    print("\n====================================================")
 
     match input:
         case 1:

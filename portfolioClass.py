@@ -45,7 +45,7 @@ class Portfolio:
 
     def loadData(self):
         if self.dataLoaded: return
-        
+
         self.cleanAssets()
         self.loadNames()
         self.loadPrices()
@@ -123,9 +123,9 @@ class MasterPortfolio(Portfolio):
     def showAssets(self):
         if not self.dataLoaded: self.loadData()
 
-        print("\nShowing your \033[4mTotal\033[0m assets:\n")
+        print("\nShowing your \033[4mtotal\033[0m assets:\n")
 
-        # Symbol | Name | Amount | Balance | Real-Time Price | Exchanges with Asset
+        # Symbol | Name | Amount | Balance | Real-Time Price |  Exchanges with Asset
         header = f"{'Symbol':<5} | {'Name':<25} | {'Amount':<12} | {'Balance':<11} | {'Real-Time Price':<15} | {'Exchanges with Asset':<20}"
         print(header)
         print('-'*110)
