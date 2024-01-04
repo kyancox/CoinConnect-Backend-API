@@ -1,9 +1,10 @@
+from datetime import datetime
 import cmc
 
 class Portfolio:
 
-    def __init__(self, account, portfolio):
-        self.account = account
+    def __init__(self, accountName, portfolio):
+        self.accountName = accountName
         if type(portfolio) != dict: raise TypeError()
         self.portfolio = {key:float(value) for key, value in portfolio.items()}
         self.dataLoaded = False
@@ -66,7 +67,7 @@ class Portfolio:
 
         if not self.dataLoaded: self.loadData()
 
-        print("\nShowing your assets in " + "\033[4m" + self.account + "\033[0m" + ":\n")
+        print("\nShowing your assets in " + "\033[4m" + self.accountName + "\033[0m" + ":\n")
 
         # Symbol | Name | Amount | Balance | Real-Time Price
         header = f"{'Symbol':<5} | {'Name':<25} | {'Amount':<12} | {'Balance':<11} | {'Real-Time Price':<15}"
@@ -80,10 +81,27 @@ class Portfolio:
             price = round(float(value[3]), 4)
             print(f"{symbol:<6} | {name:<25} | {amount:<12} | ${balance:<10} | ${price:<10}")
         print()
-        print("Total Balance in " + '\033[4m' + self.account + "\033[0m" + ": " + self.totalBalance() + "\n")
+        print("Total Balance in " + '\033[4m' + self.accountName + "\033[0m" + ": " + self.totalBalance() + "\n")
+
+    def portfolioToDataframe(self):
+        
+        if not self.dataLoaded: self.loadData()
+
+        current_time = datetime.now().strftime("%m-%d-%Y %H:%M")
+
+        dataframe = {
+            'Symbol':[key for key in self.portfolio],
+            'Name':[value[0] for value in self.portfolio.values()],
+            'Amount':[value[1] for value in self.portfolio.values()],
+            f'Balance at {current_time}': [value[2] for value in self.portfolio.values()],
+            f'Price at {current_time}':[value[3] for value in self.portfolio.values()]
+        }
+
+        return dataframe
 
 
 from collections import defaultdict
+import pandas as pd
 
 # Uses OOP Principles like Inheritance and Composition 
 class MasterPortfolio(Portfolio):
@@ -104,13 +122,15 @@ class MasterPortfolio(Portfolio):
         for account in self.accounts:
             accountPortfolio = account.portfolio
             for coin in accountPortfolio:
+                if accountPortfolio[coin] == 0: continue
                 self.balances[coin] += accountPortfolio[coin]
 
     def generateExchangeData(self):
         for account in self.accounts:
             portfolio = account.portfolio
-            exchange = account.account
+            exchange = account.accountName
             for coin in portfolio:
+                if portfolio[coin] == 0: continue
                 self.exchangeData[coin].append(exchange)
 
     def loadData(self):
@@ -140,8 +160,27 @@ class MasterPortfolio(Portfolio):
         print(f"Total Balance: {self.totalBalance()}")
         for account in self.accounts:
             account.loadData()
-            print(f"{account.account}: {account.totalBalance()}")
+            print(f"{account.accountName}: {account.totalBalance()}")
         print()
 
+    def portfolioToDataframe(self):
+
+       dataframe = super().portfolioToDataframe()
+       
+       dataframe['Exchanges with Asset'] = [', '.join(exchanges) for exchanges in self.exchangeData.values()]
+       
+       return dataframe
+
+
     def pandasToExcel(self):
-        pass
+        if not self.dataLoaded: self.loadData()
+        
+        masterDF = pd.DataFrame(self.portfolioToDataframe())
+
+        current_time = datetime.now().strftime("%m-%d-%Y %H:%M")
+        with pd.ExcelWriter(f'/Users/kyancox/Downloads/output {current_time}.xlsx') as writer:
+            masterDF.to_excel(writer, sheet_name = 'Master', index=False)
+
+            for account in self.accounts:
+                account.loadData()
+                pd.DataFrame(account.portfolioToDataframe()).to_excel(writer, sheet_name=account.accountName, index=False)

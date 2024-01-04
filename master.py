@@ -8,4 +8,17 @@ accounts = [coinbase, gemini, ledger]
 master = MasterPortfolio(accounts)
 
 if __name__ == "__main__":
-    master.showAssets()
+
+    master.pandasToExcel()
+    #master.showAssets()
+
+
+
+    # df = master.portfolioToDataframe()
+    # for value in df.values():
+    #     print(len(value))
+
+
+    # master.generateBalances()
+
+    # print(len(master.balances))
