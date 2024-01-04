@@ -7,6 +7,6 @@ import pprint
 accounts = [coinbase, gemini, ledger]
 master = MasterPortfolio(accounts)
 
-if __name__ == "__main__":
-
+if __name__ == "__main__":    
+    
     master.showAssets()

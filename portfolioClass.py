@@ -134,11 +134,16 @@ class MasterPortfolio(Portfolio):
                 if portfolio[coin] == 0: continue
                 self.exchangeData[coin].append(exchange)
 
+    def loadExchangeData(self):
+        for asset in self.portfolio:
+            self.portfolio[asset].append(self.exchangeData[asset])
+
     def loadData(self):
         if self.dataLoaded: return
 
         self.generateExchangeData()
         super().loadData()
+        self.loadExchangeData()
 
     # Overrided from 
     def showAssets(self):
@@ -156,7 +161,8 @@ class MasterPortfolio(Portfolio):
             amount = round(float(value[1]), 5)
             balance = round(float(value[2]), 4)
             price = round(float(value[3]), 4)
-            print(f"{symbol:<6} | {name:<25} | {amount:<12} | ${balance:<10} | ${price:<14} | {str(self.exchangeData[key])}")
+            exchanges = value[4]
+            print(f"{symbol:<6} | {name:<25} | {amount:<12} | ${balance:<10} | ${price:<14} | {str(exchanges)}")
         print()
         print(f"Total Balance: {self.totalBalance()}")
         for account in self.accounts:
@@ -165,12 +171,11 @@ class MasterPortfolio(Portfolio):
         print()
 
     def portfolioToDataframe(self):
+        dataframe = super().portfolioToDataframe()
 
-       dataframe = super().portfolioToDataframe()
-       
-       dataframe['Exchanges with Asset'] = [', '.join(exchanges) for exchanges in self.exchangeData.values()]
-       
-       return dataframe
+        dataframe['Exchanges with Asset'] = [value[4] for value in self.portfolio.values()]
+
+        return dataframe
 
 
     def pandasToExcel(self):
