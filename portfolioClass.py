@@ -35,7 +35,7 @@ class Portfolio:
     # Loads current balance of coins into given portfolio using real-time prices
     def loadBalance(self):
         for key, value in self.portfolio.items():
-            value[2] = str(float(value[1]) * float(value[2]))
+            value[2] = float(value[1]) * float(value[2])
 
         self.loadPrices()
 
@@ -173,6 +173,8 @@ class MasterPortfolio(Portfolio):
 
 
     def pandasToExcel(self):
+        print("Exporting Excel file.\n")
+
         if not self.dataLoaded: self.loadData()
         
         masterDF = pd.DataFrame(self.portfolioToDataframe())
@@ -184,3 +186,5 @@ class MasterPortfolio(Portfolio):
             for account in self.accounts:
                 account.loadData()
                 pd.DataFrame(account.portfolioToDataframe()).to_excel(writer, sheet_name=account.accountName, index=False)
+
+        print("Export complete.\n")

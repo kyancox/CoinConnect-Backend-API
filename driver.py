@@ -21,12 +21,12 @@ def main():
 2) Show Coinbase Portfolio
 3) Show Gemini Portfolio
 4) Show Ledger Portfolio
-5) Exit
-6) Export Portfolios to Excel
+5) Export Portfolios to Excel
+6) Exit
           
           """)
-    input = read_valid_int("Choose an option: ", 1, 5)
-    print("\n====================================================")
+    input = read_valid_int("Choose an option: ", 1, 6)
+    print("\n====================================================\n")
 
     match input:
         case 1:
@@ -38,6 +38,8 @@ def main():
         case 4:
             ledger.showAssets()
         case 5:
+            master.pandasToExcel()
+        case 6:
             return
         
     main()

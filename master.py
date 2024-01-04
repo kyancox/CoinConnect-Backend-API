@@ -9,16 +9,4 @@ master = MasterPortfolio(accounts)
 
 if __name__ == "__main__":
 
-    master.pandasToExcel()
-    #master.showAssets()
-
-
-
-    # df = master.portfolioToDataframe()
-    # for value in df.values():
-    #     print(len(value))
-
-
-    # master.generateBalances()
-
-    # print(len(master.balances))
+    master.showAssets()
