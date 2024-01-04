@@ -1,15 +1,11 @@
-from cmc import getPrices, loadNames
+from cmc import getPrices, loadNames 
 
 class Portfolio:
 
-    exchange = ""
-    portfolio = {}
-    prices = []
-    dataLoaded = False
-
-    def __init__(self, exchange, portfolio):
-        self.exchange = exchange
-        self.portfolio = portfolio
+    def __init__(self, account, portfolio):
+        self.account = account
+        self.portfolio = portfolio # Write error if portfolio is not in {'string':float} form 
+        self.dataLoaded = False
 
     # Requires loadData() to be called. 
     def sortPortfolio(self):
@@ -23,34 +19,33 @@ class Portfolio:
 
     # Clean assets so that accounts with no amount of cryptocurrency (0) are removed
     def cleanAssets(self):
-        # print(f"Before: {len(accounts)}\n")
-        # pprint.pprint(accounts)
         clean_accounts = {}
 
         for key, value in self.portfolio.items():
             if float(value[1]) != 0:
                 clean_accounts[key] = value
-
-        # print(f"After: {len(clean_accounts)}\n")
-        # pprint.pprint(clean_accounts)
                 
         self.portfolio = clean_accounts
+
+        new = {}
+        for asset, value in self.balances.items():
+            if value != 0:
+                new[asset] = value
+        self.balances = new
 
     # Loads real-time prices of coins into given portfolio
     def loadPrices(self):
 
-        self.prices = getPrices(self.portfolio)
+        prices = getPrices(self.portfolio)
 
         i = 0
         for key, value in self.portfolio.items():
-            value.append(self.prices[i])
+            value.append(prices[i])
             i += 1
 
     # Loads current balance of coins into given portfolio using real-time prices
     def loadBalance(self):
         for key, value in self.portfolio.items():
-            #string = "$"
-            #string += str(float(value[1]) * float(value[2]))
             value[2] = str(float(value[1]) * float(value[2]))
 
         self.loadPrices()
@@ -61,6 +56,7 @@ class Portfolio:
         return "$" + str(sum([float(value[2]) for key, value in self.portfolio.items()])) + " USD"
 
     def loadData(self):
+        
         self.cleanAssets()
         self.loadPrices()
         self.loadBalance()
@@ -69,15 +65,10 @@ class Portfolio:
     # Prints assets and all details of portfolio into terminal 
     def showAssets(self):
 
-        # clean_accounts = cleanAssets(accounts)
-        # prices = getPrices(clean_accounts)
-        # accounts = loadPrices(clean_accounts, prices)
-        # portfolio = loadBalance(accounts, prices)
-
         if not self.dataLoaded: self.loadData()
         self.sortPortfolio()
 
-        print("\nShowing your assets in " + "\033[4m" + self.exchange + "\033[0m" + ":\n")
+        print("\nShowing your assets in " + "\033[4m" + self.account + "\033[0m" + ":\n")
 
         # Symbol | Name | Amount | Balance | Real-Time Price
         header = f"{'Symbol':<5} | {'Name':<25} | {'Amount':<12} | {'Balance':<11} | {'Real-Time Price':<15}"
@@ -91,16 +82,89 @@ class Portfolio:
             price = round(float(value[3]), 4)
             print(f"{symbol:<6} | {name:<25} | {amount:<12} | ${balance:<10} | ${price:<10}")
         print()
-        print("Total Balance in " + '\033[4m' + self.exchange + "\033[0m" + ": " + self.totalBalance() + "\n")
+        print("Total Balance in " + '\033[4m' + self.account + "\033[0m" + ": " + self.totalBalance() + "\n")
 
     def getPortfolio(self):
         return self.portfolio
     
     def getExchange(self):
-        return self.exchange
+        return self.account
     
     def getPrices(self):
         return getPrices(self.portfolio)
     
-    def loadNames(self):
-        return loadNames(self.portfolio)
+    
+
+from collections import defaultdict
+
+class MasterPortfolio(Portfolio):
+    
+    accounts = []
+    numAccounts = 0
+    exchangeData = {}
+    balances = {}
+    portfolio = {}
+
+
+    def __init__(self, accounts):
+        self.accounts = accounts
+        self.numAccounts = len(accounts)
+        self.exchangeCount = defaultdict(list)
+        self.balances = defaultdict(float)
+
+        super.__init__("Master", self.portfolio)
+
+
+    def setExchangeData(self):
+        for account in self.accounts:
+            portfolio = account.getPortfolio()
+            exchange = account.getExchange()
+            for coin in portfolio:
+                self.exchangeCount[coin].append(exchange)
+            
+    def getExchangeData(self):
+        return self.exchangeCount
+    
+    def setBalances(self):
+        for account in self.accounts:
+            portfolio = account.getPortfolio()
+            for coin in portfolio:
+                self.balances[coin] += float(portfolio[coin][1])
+
+    def removeZeros(self):
+        new = {}
+        for asset, value in self.balances.items():
+            if value != 0:
+                new[asset] = value
+        self.balances = new
+
+    # Loads real-time prices of coins into given portfolio
+    def loadPrices(self):
+
+        prices = getPrices(self.portfolio)
+
+        i = 0
+        for key, value in self.balances.items():
+            value.append(prices[i])
+            i += 1
+
+    # Loads current balance of coins into given portfolio using real-time prices
+    def loadBalance(self):
+        for key, value in self.portfolio.items():
+            value[2] = str(float(value[1]) * float(value[2]))
+
+        self.loadPrices()
+
+    def initPortfolio(self):
+        pass
+
+    def loadData(self):
+        self.setExchangeData()
+        self.setBalances()
+        self.removeZeros()
+        self.portfolio = loadNames(self.balances)
+        self.loadPrices()
+        self.loadBalance()
+
+    def showAssets(self):
+        pass

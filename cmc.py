@@ -62,8 +62,6 @@ def loadNames(dictionary):
         'X-CMC_PRO_API_KEY':api_key
     }
 
-    prices = []
-
     # Initialize Session
     session = Session()
     session.headers.update(headers)

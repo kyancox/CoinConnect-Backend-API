@@ -15,22 +15,12 @@ data = accounts.data
 
 accounts = {key.balance.currency:[key.currency.name, key.balance.amount] for key in data}
 
+accounts2 = {key.balance.currency:key.balance.amount for key in data}
+
 coinbase = Portfolio("Coinbase", accounts)
 
 if __name__ == '__main__':
-    # coinbase.loadData()
-    # #pprint.pprint(coinbase.getPortfolio())
-    # portfolio = coinbase.getPortfolio()
-
-    # #pprint.pprint(portfolio)
-
-    # sortedPortfolio = sorted(portfolio.items(), key = lambda coin: float(coin[1][2]), reverse = True)
-
-
-
-    # sortedPortfolio = (dict(portfolio))
-
-    # #pprint.pprint(dict(portfolio))
-    coinbase.showAssets()
+    pprint.pprint(accounts2)
+    #coinbase.showAssets()
 
 
