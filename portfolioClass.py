@@ -189,11 +189,15 @@ class MasterPortfolio(Portfolio):
             balance_column = 3
             next_row = len(masterDF) + 2
             worksheet = writer.sheets['Master']
+            workbook = writer.book
+            total_balance_format = workbook.add_format({'num_format': '$#,##0.00', 'bold': True})
 
-            worksheet.write(next_row, balance_column, total_balance)
-            worksheet.write(next_row, balance_column - 1, "Total Balance:")
+            worksheet.write(next_row, balance_column, total_balance, total_balance_format)
+            worksheet.write(next_row, balance_column - 1, "Total Balance:", total_balance_format)
 
-            for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25), ("E:E", 25), ("F:F", 25)]:
+            currency_format = workbook.add_format({'num_format': '$#,##0.00', 'bold': False})
+
+            for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25, currency_format), ("E:E", 25, currency_format), ("F:F", 25)]:
                 writer.sheets['Master'].set_column(*column_width)
 
             for account in self.accounts:
@@ -204,10 +208,10 @@ class MasterPortfolio(Portfolio):
                 total_balance = float(account.totalBalance().replace("$", "").replace(" USD", ""))
                 worksheet = writer.sheets[account.accountName]
 
-                worksheet.write(next_row, balance_column, total_balance)
-                worksheet.write(next_row, balance_column - 1, "Total Balance:")
+                worksheet.write(next_row, balance_column, total_balance, total_balance_format)
+                worksheet.write(next_row, balance_column - 1, "Total Balance:", total_balance_format)
 
-                for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25), ("E:E", 25)]:
+                for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25, currency_format), ("E:E", 25, currency_format)]:
                     writer.sheets[account.accountName].set_column(*column_width)
 
         print("Export complete.\n")
