@@ -20,7 +20,7 @@ class Portfolio:
 
     #
     def loadNames(self):
-        self.portfolio = cmc.loadNames(self.portfolio)
+        cmc.loadNames(self.portfolio)
 
     # Loads real-time prices of coins into given portfolio
     def loadPrices(self):
@@ -48,13 +48,12 @@ class Portfolio:
         self.loadNames()
         self.loadPrices()
         self.loadBalance()
+        self.sortPortfolio()
         self.dataLoaded = True
 
 
     # Requires loadData() to be called. 
     def sortPortfolio(self):
-        if not self.dataLoaded: raise Exception("Data is not loaded.")
-
         sortedPortfolio = sorted(self.portfolio.items(), key = lambda coin: float(coin[1][2]), reverse = True)
         sortedPortfolio = dict(sortedPortfolio)
         
@@ -64,7 +63,6 @@ class Portfolio:
     def showAssets(self):
 
         if not self.dataLoaded: self.loadData()
-        self.sortPortfolio()
 
         print("\nShowing your assets in " + "\033[4m" + self.account + "\033[0m" + ":\n")
 
@@ -95,62 +93,51 @@ class MasterPortfolio(Portfolio):
 
         self.exchangeData = defaultdict(list)
         self.balances = defaultdict(float)
-        self.portfolio = {}
+        self.generateBalances()
 
-        self.numAccounts = len(accounts)
+        self.portfolio = dict(self.balances)
+        super().__init__("Master", self.portfolio)
 
-        super.__init__("Master", self.portfolio)
-
-
-
-    def setExchangeData(self):
+    def generateBalances(self):
         for account in self.accounts:
-            portfolio = account.getPortfolio()
-            exchange = account.getExchange()
+            accountPortfolio = account.portfolio
+            for coin in accountPortfolio:
+                self.balances[coin] += accountPortfolio[coin]
+
+    def generateExchangeData(self):
+        for account in self.accounts:
+            portfolio = account.portfolio
+            exchange = account.account
             for coin in portfolio:
                 self.exchangeData[coin].append(exchange)
 
-    
-    def setBalances(self):
-        for account in self.accounts:
-            portfolio = account.getPortfolio()
-            for coin in portfolio:
-                self.balances[coin] += float(portfolio[coin][1])
-
-    def removeZeros(self):
-        new = {}
-        for asset, value in self.balances.items():
-            if value != 0:
-                new[asset] = value
-        self.balances = new
-
-    # Loads real-time prices of coins into given portfolio
-    def loadPrices(self):
-
-        prices = cmc.getPrices(self.portfolio)
-
-        i = 0
-        for key, value in self.balances.items():
-            value.append(prices[i])
-            i += 1
-
-    # Loads current balance of coins into given portfolio using real-time prices
-    def loadBalance(self):
-        for key, value in self.portfolio.items():
-            value[2] = str(float(value[1]) * float(value[2]))
-
-        self.loadPrices()
-
-    def initPortfolio(self):
-        pass
-
     def loadData(self):
-        self.setExchangeData()
-        self.setBalances()
-        self.removeZeros()
-        self.portfolio = cmc.loadNames(self.balances)
-        self.loadPrices()
-        self.loadBalance()
+        self.generateExchangeData()
+        super().loadData()
 
+    # Overrided from 
     def showAssets(self):
+        if not self.dataLoaded: self.loadData()
+
+        print("\nShowing your \033[4mTotal\033[0m assets:\n")
+
+        # Symbol | Name | Amount | Balance | Real-Time Price | Exchanges with Asset
+        header = f"{'Symbol':<5} | {'Name':<25} | {'Amount':<12} | {'Balance':<11} | {'Real-Time Price':<15} | {'Exchanges with Asset':<20}"
+        print(header)
+        print('-'*110)
+        for key, value in self.portfolio.items():
+            symbol = key
+            name = value[0]
+            amount = round(float(value[1]), 5)
+            balance = round(float(value[2]), 4)
+            price = round(float(value[3]), 4)
+            print(f"{symbol:<6} | {name:<25} | {amount:<12} | ${balance:<10} | ${price:<14} | {str(self.exchangeData[key])}")
+        print()
+        print(f"Total Balance: {self.totalBalance()}")
+        for account in self.accounts:
+            account.loadData()
+            print(f"{account.account}: {account.totalBalance()}")
+        print()
+
+    def pandasToExcel(self):
         pass

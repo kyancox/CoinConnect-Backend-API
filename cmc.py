@@ -66,8 +66,6 @@ def loadNames(dictionary):
     session = Session()
     session.headers.update(headers)
 
-    portfolio = {}
-
     try:
         response = session.get(url, params=parameters)
         data = json.loads(response.text)
@@ -77,11 +75,10 @@ def loadNames(dictionary):
             symbol = keys[i]
             name = data[symbol][0]['name']
             #coinPrice = data[keys[i]][0]['quote']['USD']['price']
-            portfolio[symbol] = [name, dictionary[symbol]]
+            dictionary[symbol] = [name, dictionary[symbol]]
         
     except(ConnectionError, Timeout, TooManyRedirects) as e:
         print(e)
     
-    return portfolio
 
 
