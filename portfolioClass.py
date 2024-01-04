@@ -44,6 +44,8 @@ class Portfolio:
         return "$" + str(sum([float(value[2]) for key, value in self.portfolio.items()])) + " USD"
 
     def loadData(self):
+        if self.dataLoaded: return
+        
         self.cleanAssets()
         self.loadNames()
         self.loadPrices()
@@ -112,6 +114,8 @@ class MasterPortfolio(Portfolio):
                 self.exchangeData[coin].append(exchange)
 
     def loadData(self):
+        if self.dataLoaded: return
+
         self.generateExchangeData()
         super().loadData()
 
