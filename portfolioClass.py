@@ -1,42 +1,30 @@
-from cmc import getPrices, loadNames 
+import cmc
 
 class Portfolio:
 
     def __init__(self, account, portfolio):
         self.account = account
-        self.portfolio = portfolio # Write error if portfolio is not in {'string':float} form 
+        if type(portfolio) != dict: raise TypeError()
+        self.portfolio = {key:float(value) for key, value in portfolio.items()}
         self.dataLoaded = False
-
-    # Requires loadData() to be called. 
-    def sortPortfolio(self):
-        if not self.dataLoaded: raise Exception("Data is not loaded.")
-
-        sortedPortfolio = sorted(self.portfolio.items(), key = lambda coin: float(coin[1][2]), reverse = True)
-        sortedPortfolio = dict(sortedPortfolio)
-        
-        self.portfolio = sortedPortfolio
-
 
     # Clean assets so that accounts with no amount of cryptocurrency (0) are removed
     def cleanAssets(self):
-        clean_accounts = {}
-
-        for key, value in self.portfolio.items():
-            if float(value[1]) != 0:
-                clean_accounts[key] = value
-                
-        self.portfolio = clean_accounts
-
         new = {}
-        for asset, value in self.balances.items():
+
+        for asset, value in self.portfolio.items():
             if value != 0:
                 new[asset] = value
-        self.balances = new
+
+        self.portfolio = new
+
+    #
+    def loadNames(self):
+        self.portfolio = cmc.loadNames(self.portfolio)
 
     # Loads real-time prices of coins into given portfolio
     def loadPrices(self):
-
-        prices = getPrices(self.portfolio)
+        prices = cmc.getPrices(self.portfolio)
 
         i = 0
         for key, value in self.portfolio.items():
@@ -56,12 +44,22 @@ class Portfolio:
         return "$" + str(sum([float(value[2]) for key, value in self.portfolio.items()])) + " USD"
 
     def loadData(self):
-        
         self.cleanAssets()
+        self.loadNames()
         self.loadPrices()
         self.loadBalance()
         self.dataLoaded = True
 
+
+    # Requires loadData() to be called. 
+    def sortPortfolio(self):
+        if not self.dataLoaded: raise Exception("Data is not loaded.")
+
+        sortedPortfolio = sorted(self.portfolio.items(), key = lambda coin: float(coin[1][2]), reverse = True)
+        sortedPortfolio = dict(sortedPortfolio)
+        
+        self.portfolio = sortedPortfolio
+        
     # Prints assets and all details of portfolio into terminal 
     def showAssets(self):
 
@@ -84,35 +82,23 @@ class Portfolio:
         print()
         print("Total Balance in " + '\033[4m' + self.account + "\033[0m" + ": " + self.totalBalance() + "\n")
 
-    def getPortfolio(self):
-        return self.portfolio
-    
-    def getExchange(self):
-        return self.account
-    
-    def getPrices(self):
-        return getPrices(self.portfolio)
-    
-    
 
 from collections import defaultdict
 
+# Uses OOP Principles like Inheritance and Composition 
 class MasterPortfolio(Portfolio):
     
-    accounts = []
-    numAccounts = 0
-    exchangeData = {}
-    balances = {}
-    portfolio = {}
-
 
     def __init__(self, accounts):
         self.accounts = accounts
-        self.numAccounts = len(accounts)
-        self.exchangeCount = defaultdict(list)
+        self.exchangeData = defaultdict(list)
         self.balances = defaultdict(float)
+        self.portfolio = {}
+
+        self.numAccounts = len(accounts)
 
         super.__init__("Master", self.portfolio)
+
 
 
     def setExchangeData(self):
@@ -120,10 +106,8 @@ class MasterPortfolio(Portfolio):
             portfolio = account.getPortfolio()
             exchange = account.getExchange()
             for coin in portfolio:
-                self.exchangeCount[coin].append(exchange)
-            
-    def getExchangeData(self):
-        return self.exchangeCount
+                self.exchangeData[coin].append(exchange)
+
     
     def setBalances(self):
         for account in self.accounts:
@@ -141,7 +125,7 @@ class MasterPortfolio(Portfolio):
     # Loads real-time prices of coins into given portfolio
     def loadPrices(self):
 
-        prices = getPrices(self.portfolio)
+        prices = cmc.getPrices(self.portfolio)
 
         i = 0
         for key, value in self.balances.items():

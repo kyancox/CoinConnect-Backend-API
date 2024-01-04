@@ -1,5 +1,4 @@
 import pandas as pd
-from cmc import loadNames
 from portfolioClass import Portfolio
 from ledger_sec import filePath
 
@@ -12,7 +11,6 @@ df_filtered['Adjusted Amount'] = df_filtered.apply(
 )
 
 ledgerAssets = df_filtered.groupby('Currency Ticker')['Adjusted Amount'].sum().to_dict()
-ledgerAssets = loadNames(ledgerAssets)
 
 ledger = Portfolio("Ledger", ledgerAssets)
 

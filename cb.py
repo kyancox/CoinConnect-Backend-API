@@ -13,14 +13,12 @@ accounts = client.get_accounts(limit='100')
 
 data = accounts.data
 
-accounts = {key.balance.currency:[key.currency.name, key.balance.amount] for key in data}
-
-accounts2 = {key.balance.currency:key.balance.amount for key in data}
+#accounts = {key.balance.currency:[key.currency.name, key.balance.amount] for key in data} 
+accounts = {key.balance.currency:key.balance.amount for key in data}
 
 coinbase = Portfolio("Coinbase", accounts)
 
 if __name__ == '__main__':
-    pprint.pprint(accounts2)
-    #coinbase.showAssets()
+    coinbase.showAssets()
 
 

@@ -77,11 +77,11 @@ def loadNames(dictionary):
             symbol = keys[i]
             name = data[symbol][0]['name']
             #coinPrice = data[keys[i]][0]['quote']['USD']['price']
-            dictionary[symbol] = [name, dictionary[symbol]]
+            portfolio[symbol] = [name, dictionary[symbol]]
         
     except(ConnectionError, Timeout, TooManyRedirects) as e:
         print(e)
     
-    return dictionary
+    return portfolio
 
 
