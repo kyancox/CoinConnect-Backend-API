@@ -212,6 +212,7 @@ class MasterPortfolio(Portfolio):
 
                 total_balance = float(account.totalBalance().replace("$", "").replace(" USD", ""))
                 worksheet = writer.sheets[account.accountName]
+                next_row = len(accountDF) + 2
 
                 worksheet.write(next_row, balance_column, total_balance, total_balance_format)
                 worksheet.write(next_row, balance_column - 1, "Total Balance:", total_balance_format)
