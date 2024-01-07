@@ -10,6 +10,7 @@ def coinbasePortfolio(api_key, api_secret):
     
     client = Client(api_key, api_secret)
 
+
     accounts = client.get_accounts(limit='100')
     # https://stackoverflow.com/questions/67343099/coinbase-api-btc-account-missing
     # https://forums.coinbasecloud.dev/t/client-get-accounts-only-gives-certain-cryptos-for-output/890/4

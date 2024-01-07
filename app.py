@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, abort, send_file
 import pandas as pd
 from io import BytesIO
+from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 
 # Import for Coinbase
 from cb import coinbasePortfolio
@@ -92,8 +93,9 @@ def init_coinbase():
         coinbase = coinbasePortfolio(api_key, api_secret)
         print(f"type(coinbase) = {type(coinbase)}")
         print('Coinbase portfolio initialized successfully')
-    except Exception:
-        return jsonify({'message':'api_key or api_secret for Coinbase was invalid.'}), 404
+    except RequestsJSONDecodeError:
+        #return jsonify({'message':'api_key or api_secret for Coinbase was invalid.'}), 404
+        abort(404, 'api_key or api_secret for Coinbase was invalid.')
     
     global accounts
     accounts.append(coinbase)
@@ -110,7 +112,8 @@ def init_gemini():
         gemini = geminiPortfolio(api_key, api_secret)
         print('Gemini portfolio initialized successfully')
     except Exception:
-        return jsonify({'message':'api_key or api_secret for Gemini was invalid.'}), 404
+        #return jsonify({'message':'api_key or api_secret for Gemini was invalid.'}), 404
+        abort(404, 'api_key or api_secret for Gemini was invalid.')
     
     global accounts
     accounts.append(gemini)

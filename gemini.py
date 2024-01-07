@@ -38,7 +38,7 @@ def geminiPortfolio(api_key, api_secret):
         balances = response.json() # returns a list of dictionaries
 
     except (ConnectionError, Timeout, TooManyRedirects) as e:
-        print(e)
+        raise e
 
     balances = {balances[i]['currency']:balances[i]['amount'] for i in range(1, len(balances))}
 
