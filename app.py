@@ -123,36 +123,29 @@ def init_ledger():
     pass
 
 def init_master():
-    global master
+    global master, accounts
 
     if len(accounts) == 0:
         return jsonify({'message':'Accounts are invalid...'}), 404
 
     master = MasterPortfolio(accounts)
 
-# @app.route('/api/<name>/json', methods=['GET'])
-# def account_json(name):
-#     exchange = str(name).lower()
-#     account = None
-#     for n in [coinbase, gemini, ledger]:
-#         if exchange == n: account = n
-#     if not account:
-#         return jsonify({'message':'Acccount not found...'}), 404
-
-#     if type(account) == Portfolio:
-#         account.loadData()
-#         return jsonify(account.portfolio), 202
-    
-#     return jsonify({'message':f'Error returning {name} portfolio json...'}), 404
 
 @app.route('/api/coinbase/json', methods=['GET'])
 def coinbase_json():
-    print(coinbase)
     if type(coinbase) == Portfolio:
         coinbase.loadData()
         return jsonify(coinbase.portfolio), 202
     
     return jsonify({'message':'Error returning Coinbase portfolio json...'}), 404
+
+@app.route('/api/coinbase/total-balance', methods=['GET'])
+def coinbase_total_balance():
+    if type(coinbase) == Portfolio:
+        coinbase.loadData()
+        return jsonify({'balance':coinbase.totalBalance()}), 202
+
+    return jsonify({'message':'Error returning Coinbase balance...'}), 404
 
 @app.route('/api/gemini/json', methods=['GET'])
 def gemini_json():
@@ -162,37 +155,37 @@ def gemini_json():
     
     return jsonify({'message':'Error returning Gemini portfolio json...'}), 404
 
+@app.route('/api/gemini/total-balance', methods=['GET'])
+def gemini_total_balance():
+    if type(gemini) == Portfolio:
+        gemini.loadData()
+        return jsonify({'balance':gemini.totalBalance()}), 202
+
+    return jsonify({'message':'Error returning Gemini balance...'}), 404
+
 @app.route('/api/ledger/xlsx', methods = ['GET'])
 def ledger_xlsx():
     pass 
 
 @app.route('/api/master/json', methods = ['GET'])
 def master_json():
-    #init_master()
-    global master
-    global accounts
-
-    if len(accounts) == 0:
-        return jsonify({'message':'Accounts are invalid...'}), 404
-    master = MasterPortfolio(accounts)
+    init_master()
 
     if type(master) == MasterPortfolio:
         master.loadData()
         return jsonify(master.portfolio), 202
     
     return jsonify({'message':'Error returning Master portfolio json...'}), 404
-
-@app.route('/api/total-balance/<name>', methods=['GET'])
-def get_total_balance(name):
-    exchange = str(name).lower()
-    account = None
-    for n in [coinbase, gemini, ledger]:
-        if exchange == n: account = n
-    if not account:
-        return jsonify({'message':'Acccount not found...'}), 404
     
-    return jsonify({'account':account, 'balance':str(account.get_total_balance())}), 202
+@app.route('/api/master/total-balance', methods=['GET'])
+def master_total_balance():
+    init_master()
 
+    if type(master) == MasterPortfolio:
+        master.loadData()
+        return jsonify({'balance':master.totalBalance()}), 202
+
+    return jsonify({'message':'Error returning Master balance...'}), 404
 
 '''
 Sample code

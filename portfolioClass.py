@@ -123,7 +123,13 @@ class MasterPortfolio(Portfolio):
         for account in self.accounts:
             accountPortfolio = account.portfolio
             for coin in accountPortfolio:
+
                 if accountPortfolio[coin] == 0: continue
+
+                if type(accountPortfolio[coin]) == list:
+                    self.balances[coin] += float(accountPortfolio[coin][1])
+                    continue
+
                 self.balances[coin] += accountPortfolio[coin]
 
     def generateExchangeData(self):
