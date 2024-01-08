@@ -3,6 +3,8 @@ import pandas as pd
 from io import BytesIO
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 
+from flask_sqlalchemy import SQLAlchemy
+
 # Import for Coinbase
 from cb import coinbasePortfolio
 
@@ -13,6 +15,8 @@ from portfolioClass import Portfolio, MasterPortfolio
 
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
+db = SQLAlchemy(app)
 
 '''
 Methods:
@@ -44,6 +48,27 @@ ledger = None
 master = None
 accounts = []
 
+
+# class CoinbaseAPI(db.Model):
+#     id = db.Column(db.Interger, primary_key=True)
+#     api_key = db.Column(db.String(120), nullable=False)
+#     api_secret = db.Column(db.String(120), nullable=False)
+
+# class GeminiAPI(db.Model):
+#     id = db.Column(db.Interger, primary_key=True)
+#     api_key = db.Column(db.String(120), nullable=False)
+#     api_secret = db.Column(db.String(120), nullable=False)
+
+class UserModel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    coinbase_key = db.Column(db.String(120), nullable=False, default=None)
+    coinbase_secret = db.Column(db.String(120), nullable=False, default=None)
+    gemini_key = db.Column(db.String(120), nullable=False, default=None)
+    gemini_secret = db.Column(db.String(120), nullable=False, default=None)
+
+    def __repr__(self):
+        print()
+
 @app.route('/api/coinbase/keys', methods=['POST'])
 def set_coinbase_keys():
     data = request.get_json()
@@ -53,12 +78,24 @@ def set_coinbase_keys():
     if data is None or 'api_key' not in data or 'api_secret' not in data:
         return jsonify({'error': 'Invalid request format. Please provide "api_key" and "api_secret" in the request body.'}), 400
 
-    api_keys['Coinbase'] = {
-        'api_key': data['api_key'],
-        'api_secret': data['api_secret']
-    }
+    # api_keys['Coinbase'] = {
+    #     'api_key': data['api_key'],
+    #     'api_secret': data['api_secret']
+    # }
 
-    print(api_keys)
+    user = UserModel.query.first()
+    api_key = data['api_key']
+    api_secret = data['api_secret']
+
+    if user is None:
+        new_user = UserModel(coinbase_key=api_key, coinbase_secret=api_secret, gemini_key=None, gemini_secret=None)
+        db.session.add(new_user)
+    else:
+        user.coinbase_key = api_key
+        user.coinbase_secret = api_secret
+    db.session.commit()
+    
+    #print(api_keys)
     init_coinbase()
     return jsonify({'message':'Coinbase keys updated successfully'}), 201
 
@@ -70,12 +107,24 @@ def set_gemini_keys():
     if data is None or 'api_key' not in data or 'api_secret' not in data:
         return jsonify({'error': 'Invalid request format. Please provide "api_key" and "api_secret" in the request body.'}), 400
     
-    api_keys['Gemini'] = {
-        'api_key': data['api_key'],
-        'api_secret': data['api_secret']
-    }
+    # api_keys['Gemini'] = {
+    #     'api_key': data['api_key'],
+    #     'api_secret': data['api_secret']
+    # }
 
-    print(api_keys)
+    user = UserModel.query.first()
+    api_key = data['api_key']
+    api_secret = data['api_secret']
+
+    if user is None:
+        new_user = UserModel(gemini_key=api_key, gemini_secret=api_secret, coinbase_key=None,coinbase_secret=None)
+        db.session.add(new_user)
+    else:
+        user.gemini_key = api_key
+        user.gemini_secret = api_secret
+    db.session.commit()
+
+    #print(api_keys)
     init_gemini()
     return jsonify({'message':'Gemini keys updated successfully'}), 201
 
@@ -86,38 +135,55 @@ def set_gemini_keys():
 def init_coinbase():
     global coinbase
 
-    api_key = api_keys['Coinbase']['api_key']
-    api_secret = api_keys['Coinbase']['api_secret']
+    # api_key = api_keys['Coinbase']['api_key']
+    # api_secret = api_keys['Coinbase']['api_secret']
 
-    try:
-        coinbase = coinbasePortfolio(api_key, api_secret)
-        print(f"type(coinbase) = {type(coinbase)}")
-        print('Coinbase portfolio initialized successfully')
-    except RequestsJSONDecodeError:
-        #return jsonify({'message':'api_key or api_secret for Coinbase was invalid.'}), 404
-        abort(404, 'api_key or api_secret for Coinbase was invalid.')
-    
-    global accounts
-    accounts.append(coinbase)
-    print("coinbase account appended to accounts")
+    user = UserModel.query.first()
+
+    if user and user.coinbase_key and user.coinbase_secret:
+        
+        api_key = user.coinbase_key
+        api_secret = user.coinbase_secret
+
+        try:
+            coinbase = coinbasePortfolio(api_key, api_secret)
+            print(f"type(coinbase) = {type(coinbase)}")
+            print('Coinbase portfolio initialized successfully')
+        except RequestsJSONDecodeError:
+            #return jsonify({'message':'api_key or api_secret for Coinbase was invalid.'}), 404
+            abort(404, 'api_key or api_secret for Coinbase was invalid.')
+        
+        global accounts
+        accounts.append(coinbase)
+        print("coinbase account appended to accounts")
+    else:
+        abort(404, 'api_key or api_secret for Coinbase was not uploaded.')
     
 
 def init_gemini():
     global gemini
 
-    api_key = api_keys['Gemini']['api_key']
-    api_secret = api_keys['Gemini']['api_secret']
+    # api_key = api_keys['Gemini']['api_key']
+    # api_secret = api_keys['Gemini']['api_secret']
 
-    try:
-        gemini = geminiPortfolio(api_key, api_secret)
-        print('Gemini portfolio initialized successfully')
-    except Exception:
-        #return jsonify({'message':'api_key or api_secret for Gemini was invalid.'}), 404
-        abort(404, 'api_key or api_secret for Gemini was invalid.')
-    
-    global accounts
-    accounts.append(gemini)
-    print("gemini account appended to accounts")
+    user = UserModel.query.first()
+
+    if user and user.gemini_key and user.gemini_secret:
+        api_key = user.gemini_key
+        api_secret = user.gemini_secret
+
+        try:
+            gemini = geminiPortfolio(api_key, api_secret)
+            print('Gemini portfolio initialized successfully')
+        except Exception:
+            #return jsonify({'message':'api_key or api_secret for Gemini was invalid.'}), 404
+            abort(404, 'api_key or api_secret for Gemini was invalid.')
+        
+        global accounts
+        accounts.append(gemini)
+        print("gemini account appended to accounts")
+    else:
+         abort(404, 'api_key or api_secret for Gemini was not uploaded.')
 
 def init_ledger():
 
@@ -239,4 +305,6 @@ def export_excel():
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
