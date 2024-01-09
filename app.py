@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, abort, send_file, render_template, url_for, redirect
+from flask import Flask, request, jsonify, abort, send_file, render_template, url_for, redirect, current_app
 import pandas as pd
 from io import BytesIO
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
@@ -61,6 +61,12 @@ class Upload(db.Model):
     filename = db.Column(db.String(50))
     data = db.Column(db.LargeBinary)
 
+class ApiKey(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    service = db.Column(db.String(50), nullable=False)  # 'Coinbase', 'Gemini', etc.
+    api_key = db.Column(db.String(200), nullable=False)
+    api_secret = db.Column(db.String(200), nullable=False)
+
 @app.route('/api/coinbase/keys', methods=['POST'])
 def set_coinbase_keys():
     data = request.get_json()
@@ -70,32 +76,54 @@ def set_coinbase_keys():
     if data is None or 'api_key' not in data or 'api_secret' not in data:
         return jsonify({'error': 'Invalid request format. Please provide "api_key" and "api_secret" in the request body.'}), 400
 
-    api_keys['Coinbase'] = {
-        'api_key': data['api_key'],
-        'api_secret': data['api_secret']
-    }
+    # api_keys['Coinbase'] = {
+    #     'api_key': data['api_key'],
+    #     'api_secret': data['api_secret']
+    # }
 
-    print(api_keys)
+    key = data['api_key']
+    secret = data['api_secret']
+
+    coinbase_keys = ApiKey.query.filter_by(service='Coinbase').first()
+
+    if coinbase_keys:
+        coinbase_keys.api_key = key
+        coinbase_keys.api_secret = secret
+    else:
+        new_coinbase_keys = ApiKey(service='Coinbase', api_key=key, api_secret=secret)
+        db.session.add(new_coinbase_keys)
+    db.session.commit()
+
+    # print(api_keys)
     init_coinbase()
     return jsonify({'message':'Coinbase keys updated successfully'}), 201
 
 def init_coinbase():
     global coinbase
 
-    api_key = api_keys['Coinbase']['api_key']
-    api_secret = api_keys['Coinbase']['api_secret']
+    # api_key = api_keys['Coinbase']['api_key']
+    # api_secret = api_keys['Coinbase']['api_secret']
 
-    try:
-        coinbase = coinbasePortfolio(api_key, api_secret)
-        print(f"type(coinbase) = {type(coinbase)}")
-        print('Coinbase portfolio initialized successfully')
-    except RequestsJSONDecodeError:
-        #return jsonify({'message':'api_key or api_secret for Coinbase was invalid.'}), 404
-        abort(404, 'api_key or api_secret for Coinbase was invalid.')
-    
-    global accounts
-    accounts.append(coinbase)
-    print("coinbase account appended to accounts")
+    coinbase_keys = ApiKey.query.filter_by(service='Coinbase').first()
+
+    if coinbase_keys and coinbase_keys.api_key and coinbase_keys.api_secret:
+
+        key = coinbase_keys.api_key
+        secret = coinbase_keys.api_secret
+
+        try:
+            coinbase = coinbasePortfolio(key, secret)
+            print('Coinbase portfolio initialized successfully')
+        except RequestsJSONDecodeError:
+            #return jsonify({'message':'api_key or api_secret for Coinbase was invalid.'}), 404
+            abort(404, 'api_key or api_secret for Coinbase was invalid.')
+        
+        global accounts
+        accounts.append(coinbase)
+        print("coinbase account appended to accounts")
+    else:
+        abort(404, 'api_key or api_secret for Coinbase was not uploaded.')
+
 
 @app.route('/api/gemini/keys', methods=['POST'])
 def set_gemini_keys():
