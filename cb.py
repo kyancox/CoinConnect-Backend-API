@@ -25,9 +25,6 @@ def coinbasePortfolio(api_key, api_secret):
 coinbase = coinbasePortfolio(my_api_key, my_api_secret)
 
 if __name__ == '__main__':
-    print(type(coinbase))
-    print(Portfolio)
-    print(type(coinbase) == Portfolio)
-    #coinbase.showAssets()
+    coinbase.showAssets()
 
 

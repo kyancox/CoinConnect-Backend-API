@@ -7,7 +7,8 @@ import pprint
 import json
 
 # Import Portfolio classes
-from portfolioClass import Portfolio, MasterPortfolio, PortfolioManager
+from portfolioClass import Portfolio, MasterPortfolio
+from portfolioManager import PortfolioManager
 
 pm = PortfolioManager()
 
@@ -17,7 +18,7 @@ db = SQLAlchemy(app)
 
 ALLOWED_EXTENSIONS = {'csv'}
 
-# Method provided from Flask docummentation
+# Method provided from Flask docummentations
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -229,7 +230,7 @@ def download_master_xlsx():
 
     return send_file(excel_file, 
                      as_attachment=True, 
-                     attachment_filename=fileName,
+                     download_name=fileName,
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 if __name__ == "__main__":
