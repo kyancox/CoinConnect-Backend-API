@@ -103,6 +103,7 @@ class Portfolio:
 from collections import defaultdict
 import pandas as pd
 import xlsxwriter
+from io import BytesIO
 
 # Uses OOP Principles like Inheritance and Composition 
 class MasterPortfolio(Portfolio):
@@ -184,7 +185,7 @@ class MasterPortfolio(Portfolio):
         return dataframe
 
 
-    def pandasToExcel(self):
+    def pandasToExcel_local(self):
         print("Exporting Excel file.\n")
 
         if not self.dataLoaded: self.loadData()
@@ -227,3 +228,52 @@ class MasterPortfolio(Portfolio):
                     writer.sheets[account.accountName].set_column(*column_width)
 
         print("Export complete.\n")
+
+    def pandasToExcel_api(self):
+        print("Preparing Excel file for downlaod.\n")
+
+        if not self.dataLoaded: self.loadData()
+
+        # current_time = datetime.now().strftime("%m-%d-%Y %H:%M")
+        # fileName = f'/Users/kyancox/Downloads/output {current_time}.xlsx'
+
+        output = BytesIO()
+        
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            masterDF = pd.DataFrame(self.portfolioToDataframe())
+            masterDF.to_excel(writer, sheet_name = 'Master', index=False)
+
+            total_balance = float(self.totalBalance().replace("$", "").replace(" USD", ""))
+            balance_column = 3
+            next_row = len(masterDF) + 2
+            worksheet = writer.sheets['Master']
+            workbook = writer.book
+            total_balance_format = workbook.add_format({'num_format': '$#,##0.00', 'bold': True})
+
+            worksheet.write(next_row, balance_column, total_balance, total_balance_format)
+            worksheet.write(next_row, balance_column - 1, "Total Balance:", total_balance_format)
+
+            currency_format = workbook.add_format({'num_format': '$#,##0.00', 'bold': False})
+
+            for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25, currency_format), ("E:E", 25, currency_format), ("F:F", 25)]:
+                writer.sheets['Master'].set_column(*column_width)
+
+            for account in self.accounts:
+                account.loadData()
+                accountDF = pd.DataFrame(account.portfolioToDataframe())
+                accountDF.to_excel(writer, sheet_name=account.accountName, index=False)
+
+                total_balance = float(account.totalBalance().replace("$", "").replace(" USD", ""))
+                worksheet = writer.sheets[account.accountName]
+                next_row = len(accountDF) + 2
+
+                worksheet.write(next_row, balance_column, total_balance, total_balance_format)
+                worksheet.write(next_row, balance_column - 1, "Total Balance:", total_balance_format)
+
+                for column_width in [("A:A", 10), ("B:B", 20), ("C:C", 15), ("D:D", 25, currency_format), ("E:E", 25, currency_format)]:
+                    writer.sheets[account.accountName].set_column(*column_width)
+
+        output.seek(0)
+
+        print("Export complete.\n")
+        return output

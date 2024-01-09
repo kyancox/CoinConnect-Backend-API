@@ -38,7 +38,7 @@ def main():
         case 4:
             ledger.showAssets()
         case 5:
-            master.pandasToExcel()
+            master.pandasToExcel_local()
         case 6:
             return
         

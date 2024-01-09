@@ -1,13 +1,20 @@
-from flask import Flask, request, jsonify, abort, send_file
+from flask import Flask, request, jsonify, abort, send_file, render_template, url_for, redirect
 import pandas as pd
 from io import BytesIO
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
+from datetime import datetime
+
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
 
 # Import for Coinbase
 from cb import coinbasePortfolio
 
 # Import for Gemini
 from gemini import geminiPortfolio
+
+# Import for Ledger
+from ledger import ledgerPortfolio
 
 from portfolioClass import Portfolio, MasterPortfolio
 
@@ -23,10 +30,6 @@ w/ API Key and API Secret
 POST: Ledger CSV
 
 GET: Json with Portfolio data 
-how to implement this?
-we have 4 options
-return coinbase data, gemini data, ledger data, or master portfolio data... 
-
 
 GET: Excel File with Data
 https://chat.openai.com/c/9daee5bd-d674-40a5-a31d-dd6929e2ea5f
@@ -43,6 +46,20 @@ gemini = None
 ledger = None
 master = None
 accounts = []
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
+db = SQLAlchemy(app)
+
+ALLOWED_EXTENSIONS = {'csv'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+class Upload(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(50))
+    data = db.Column(db.LargeBinary)
 
 @app.route('/api/coinbase/keys', methods=['POST'])
 def set_coinbase_keys():
@@ -62,27 +79,6 @@ def set_coinbase_keys():
     init_coinbase()
     return jsonify({'message':'Coinbase keys updated successfully'}), 201
 
-@app.route('/api/gemini/keys', methods=['POST'])
-def set_gemini_keys():
-    data = request.get_json()
-
-    # Check if data is None or if 'api_key' and 'api_secret' are present in the data
-    if data is None or 'api_key' not in data or 'api_secret' not in data:
-        return jsonify({'error': 'Invalid request format. Please provide "api_key" and "api_secret" in the request body.'}), 400
-    
-    api_keys['Gemini'] = {
-        'api_key': data['api_key'],
-        'api_secret': data['api_secret']
-    }
-
-    print(api_keys)
-    init_gemini()
-    return jsonify({'message':'Gemini keys updated successfully'}), 201
-
-# def upload_ledger_csv():
-
-# Maybe init methods should go in respective POST methods?
-
 def init_coinbase():
     global coinbase
 
@@ -100,7 +96,23 @@ def init_coinbase():
     global accounts
     accounts.append(coinbase)
     print("coinbase account appended to accounts")
+
+@app.route('/api/gemini/keys', methods=['POST'])
+def set_gemini_keys():
+    data = request.get_json()
+
+    # Check if data is None or if 'api_key' and 'api_secret' are present in the data
+    if data is None or 'api_key' not in data or 'api_secret' not in data:
+        return jsonify({'error': 'Invalid request format. Please provide "api_key" and "api_secret" in the request body.'}), 400
     
+    api_keys['Gemini'] = {
+        'api_key': data['api_key'],
+        'api_secret': data['api_secret']
+    }
+
+    print(api_keys)
+    init_gemini()
+    return jsonify({'message':'Gemini keys updated successfully'}), 201
 
 def init_gemini():
     global gemini
@@ -119,11 +131,61 @@ def init_gemini():
     accounts.append(gemini)
     print("gemini account appended to accounts")
 
+
+@app.route('/api/ledger/upload-csv', methods=['POST', 'GET'])
+def upload_ledger_csv():
+    if request.method == 'POST':
+        # Check if the POST request has a file part
+        if 'file' not in request.files:
+            return {'error': 'No file part'}, 400
+
+        file = request.files['file']
+
+        # Check if the file is empty
+        if file.filename == '':
+            return {'error': 'No selected file'}, 400
+        
+        # Check if the file is an Excel file
+        if not file.filename.endswith('.csv'):
+            return {'error': 'Invalid file format. Please upload a CSV file (.csv)'}, 400
+        
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+
+            upload = Upload(filename = filename, data = file.read())
+            db.session.add(upload)
+            db.session.commit()
+
+            init_ledger()
+            return redirect(url_for('download_page'))
+        
+        return 'Upload failed.'
+    
+    return render_template('upload.html')
+
+@app.route('/download', methods=['GET'])
+def download_page():
+    return render_template('download.html')
+
+    
 def init_ledger():
+    upload = Upload.query.order_by(Upload.id.desc()).first()
 
+    if upload is None:
+        return jsonify({'error': 'No ledger file found'}), 404
+    
+    file_data = BytesIO(upload.data)
+    
+    global ledger
+    try:
+        ledger = ledgerPortfolio(file_data)
+        print('Ledger portfolio initialized successfully')
+    except Exception:
+        abort(404, 'CSV file for Ledger was invalid.')
+    
+    global accounts
     accounts.append(ledger)
-
-    pass
+    print("ledger account appended to accounts")
 
 def init_master():
     global master, accounts
@@ -166,9 +228,21 @@ def gemini_total_balance():
 
     return jsonify({'message':'Error returning Gemini balance...'}), 404
 
-@app.route('/api/ledger/xlsx', methods = ['GET'])
-def ledger_xlsx():
-    pass 
+@app.route('/api/ledger/json', methods=['GET'])
+def ledger_json():
+    if type(ledger) == Portfolio:
+        ledger.loadData()
+        return jsonify(ledger.portfolio), 202
+    
+    return jsonify({'message':'Error returning Ledger portfolio json...'}), 404
+
+@app.route('/api/ledger/total-balance', methods=['GET'])
+def ledger_total_balance():
+    if type(ledger) == Portfolio:
+        ledger.loadData()
+        return jsonify(ledger.totalBalance()), 202
+    
+    return jsonify({'message':'Error returning Ledger balance...'}), 404
 
 @app.route('/api/master/json', methods = ['GET'])
 def master_json():
@@ -190,53 +264,23 @@ def master_total_balance():
 
     return jsonify({'message':'Error returning Master balance...'}), 404
 
-'''
-Sample code
-https://chat.openai.com/c/9daee5bd-d674-40a5-a31d-dd6929e2ea5f
-'''
+@app.route('/api/master/download-xlsx', methods = ['GET'])
+def download_master_xlsx():
+    init_master()
+    master.loadData()
 
-@app.route('/api/ledger/csv', methods=['POST'])
-def upload_ledger_csv():
-    # Check if the POST request has a file part
-    if 'file' not in request.files:
-        return {'error': 'No file part'}, 400
+    excel_file = master.pandasToExcel_api()
 
-    file = request.files['file']
+    current_time = datetime.now().strftime("%m-%d-%Y %H:%M")
+    fileName = f'master_portfolio_{current_time}.xlsx'
 
-    # Check if the file is empty
-    if file.filename == '':
-        return {'error': 'No selected file'}, 400
-
-    # Check if the file is an Excel file
-    if not file.filename.endswith('.xlsx'):
-        return {'error': 'Invalid file format. Please upload an Excel file (.xlsx)'}, 400
-    
-    return
-
-# Sample DataFrame creation function (replace this with your actual function)
-def create_sample_dataframe():
-    data = {'Name': ['John', 'Alice', 'Bob'],
-            'Age': [28, 24, 22]}
-    return pd.DataFrame(data)
-
-@app.route('/api/ledger/export', methods=['GET'])
-def export_excel():
-    df = create_sample_dataframe()
-
-    # Create a BytesIO buffer to store the file in memory
-    excel_buffer = BytesIO()
-
-    # Use pandas to write the DataFrame to the BytesIO buffer as an Excel file
-    df.to_excel(excel_buffer, index=False)
-
-    # Seek to the beginning of the buffer
-    excel_buffer.seek(0)
-
-    # Send the file as a response to the user
-    return send_file(excel_buffer,
-                     download_name='exported_data.xlsx',
+    return send_file(excel_file, 
+                     as_attachment=True, 
+                     attachment_filename=fileName,
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
