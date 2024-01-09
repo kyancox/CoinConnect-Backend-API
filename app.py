@@ -1,57 +1,30 @@
-from flask import Flask, request, jsonify, abort, send_file, render_template, url_for, redirect, current_app
+from flask import Flask, request, jsonify, abort, send_file, render_template, url_for, redirect, current_app, Response
 import pandas as pd
 from io import BytesIO
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 from datetime import datetime
+import pprint
+import json
 
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 
 # Import for Coinbase
 from cb import coinbasePortfolio
-
 # Import for Gemini
 from gemini import geminiPortfolio
-
 # Import for Ledger
 from ledger import ledgerPortfolio
-
+# Import Portfolio classes
 from portfolioClass import Portfolio, MasterPortfolio
 
-
 app = Flask(__name__)
-
-'''
-Methods:
-
-POST: API Key
-w/ API Key and API Secret
-
-POST: Ledger CSV
-
-GET: Json with Portfolio data 
-
-GET: Excel File with Data
-https://chat.openai.com/c/9daee5bd-d674-40a5-a31d-dd6929e2ea5f
-- send_file() using Flask
-
-GET: total balance
-'''
-
-api_keys = {}
-
-# Global variables for exchange Portfolio classes
-coinbase = None
-gemini = None
-ledger = None
-master = None
-accounts = []
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
 db = SQLAlchemy(app)
 
 ALLOWED_EXTENSIONS = {'csv'}
 
+# Method provided from Flask docummentation
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -67,6 +40,14 @@ class ApiKey(db.Model):
     api_key = db.Column(db.String(200), nullable=False)
     api_secret = db.Column(db.String(200), nullable=False)
 
+
+# Global variables for exchange Portfolio classes
+coinbase = None
+gemini = None
+ledger = None
+master = None
+accounts = []
+
 @app.route('/api/coinbase/keys', methods=['POST'])
 def set_coinbase_keys():
     data = request.get_json()
@@ -75,11 +56,6 @@ def set_coinbase_keys():
     # Check if data is None or if 'api_key' and 'api_secret' are present in the data
     if data is None or 'api_key' not in data or 'api_secret' not in data:
         return jsonify({'error': 'Invalid request format. Please provide "api_key" and "api_secret" in the request body.'}), 400
-
-    # api_keys['Coinbase'] = {
-    #     'api_key': data['api_key'],
-    #     'api_secret': data['api_secret']
-    # }
 
     key = data['api_key']
     secret = data['api_secret']
@@ -94,19 +70,18 @@ def set_coinbase_keys():
         db.session.add(new_coinbase_keys)
     db.session.commit()
 
-    # print(api_keys)
     init_coinbase()
     return jsonify({'message':'Coinbase keys updated successfully'}), 201
 
 def init_coinbase():
-    global coinbase
-
-    # api_key = api_keys['Coinbase']['api_key']
-    # api_secret = api_keys['Coinbase']['api_secret']
+    global coinbase, accounts
 
     coinbase_keys = ApiKey.query.filter_by(service='Coinbase').first()
 
     if coinbase_keys and coinbase_keys.api_key and coinbase_keys.api_secret:
+
+        if coinbase in accounts:
+            accounts.remove(coinbase)
 
         key = coinbase_keys.api_key
         secret = coinbase_keys.api_secret
@@ -118,7 +93,6 @@ def init_coinbase():
             #return jsonify({'message':'api_key or api_secret for Coinbase was invalid.'}), 404
             abort(404, 'api_key or api_secret for Coinbase was invalid.')
         
-        global accounts
         accounts.append(coinbase)
         print("coinbase account appended to accounts")
     else:
@@ -133,31 +107,46 @@ def set_gemini_keys():
     if data is None or 'api_key' not in data or 'api_secret' not in data:
         return jsonify({'error': 'Invalid request format. Please provide "api_key" and "api_secret" in the request body.'}), 400
     
-    api_keys['Gemini'] = {
-        'api_key': data['api_key'],
-        'api_secret': data['api_secret']
-    }
+    key = data['api_key']
+    secret = data['api_secret']
 
-    print(api_keys)
+    gemini_keys = ApiKey.query.filter_by(service='Gemini').first()
+
+    if gemini_keys:
+        gemini_keys.api_key = key
+        gemini_keys.api_secret = secret
+    else:
+        new_gemini_keys = ApiKey(service='Gemini',api_key=key, api_secret=secret)
+        db.session.add(new_gemini_keys)
+    db.session.commit()
+
     init_gemini()
     return jsonify({'message':'Gemini keys updated successfully'}), 201
 
 def init_gemini():
-    global gemini
+    global gemini, accounts
 
-    api_key = api_keys['Gemini']['api_key']
-    api_secret = api_keys['Gemini']['api_secret']
+    gemini_keys = ApiKey.query.filter_by(service='Gemini').first()
 
-    try:
-        gemini = geminiPortfolio(api_key, api_secret)
-        print('Gemini portfolio initialized successfully')
-    except Exception:
-        #return jsonify({'message':'api_key or api_secret for Gemini was invalid.'}), 404
-        abort(404, 'api_key or api_secret for Gemini was invalid.')
-    
-    global accounts
-    accounts.append(gemini)
-    print("gemini account appended to accounts")
+    if gemini_keys and gemini_keys.api_key and gemini_keys.api_secret:
+
+        if gemini in accounts:
+            accounts.remove(gemini)
+
+        key = gemini_keys.api_key
+        secret = gemini_keys.api_secret
+
+        try:
+            gemini = geminiPortfolio(key, secret)
+            print('Gemini portfolio initialized successfully')
+        except Exception:
+            #return jsonify({'message':'api_key or api_secret for Gemini was invalid.'}), 404
+            abort(404, 'api_key or api_secret for Gemini was invalid.')
+        
+        accounts.append(gemini)
+        print("gemini account appended to accounts")
+    else:
+        abort(404, 'api_key or api_secret for Gemini was not uploaded.')
 
 
 @app.route('/api/ledger/upload-csv', methods=['POST', 'GET'])
@@ -180,8 +169,14 @@ def upload_ledger_csv():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
 
-            upload = Upload(filename = filename, data = file.read())
-            db.session.add(upload)
+            existing_upload = Upload.query.first()
+
+            if existing_upload:
+                existing_upload.filename = filename
+                existing_upload.data = file.read()
+            else:
+                upload = Upload(filename = filename, data = file.read())
+                db.session.add(upload)
             db.session.commit()
 
             init_ledger()
@@ -195,7 +190,6 @@ def upload_ledger_csv():
 def download_page():
     return render_template('download.html')
 
-    
 def init_ledger():
     upload = Upload.query.order_by(Upload.id.desc()).first()
 
@@ -204,14 +198,17 @@ def init_ledger():
     
     file_data = BytesIO(upload.data)
     
-    global ledger
+    global ledger, accounts
+
+    if ledger in accounts:
+        accounts.remove(ledger)
+
     try:
         ledger = ledgerPortfolio(file_data)
         print('Ledger portfolio initialized successfully')
     except Exception:
         abort(404, 'CSV file for Ledger was invalid.')
     
-    global accounts
     accounts.append(ledger)
     print("ledger account appended to accounts")
 
@@ -228,7 +225,9 @@ def init_master():
 def coinbase_json():
     if type(coinbase) == Portfolio:
         coinbase.loadData()
-        return jsonify(coinbase.portfolio), 202
+        data = coinbase.portfolio
+        response = Response(json.dumps(data, sort_keys=False), mimetype='application/json')
+        return response, 202
     
     return jsonify({'message':'Error returning Coinbase portfolio json...'}), 404
 
@@ -244,7 +243,9 @@ def coinbase_total_balance():
 def gemini_json():
     if type(gemini) == Portfolio:
         gemini.loadData()
-        return jsonify(gemini.portfolio), 202
+        data = gemini.portfolio
+        response = Response(json.dumps(data, sort_keys=False), mimetype='application/json')
+        return response, 202
     
     return jsonify({'message':'Error returning Gemini portfolio json...'}), 404
 
@@ -260,7 +261,9 @@ def gemini_total_balance():
 def ledger_json():
     if type(ledger) == Portfolio:
         ledger.loadData()
-        return jsonify(ledger.portfolio), 202
+        data = ledger.portfolio
+        response = Response(json.dumps(data, sort_keys=False), mimetype='application/json')
+        return response, 202
     
     return jsonify({'message':'Error returning Ledger portfolio json...'}), 404
 
@@ -268,7 +271,7 @@ def ledger_json():
 def ledger_total_balance():
     if type(ledger) == Portfolio:
         ledger.loadData()
-        return jsonify(ledger.totalBalance()), 202
+        return jsonify({'balance':ledger.totalBalance()}), 202
     
     return jsonify({'message':'Error returning Ledger balance...'}), 404
 
@@ -278,7 +281,9 @@ def master_json():
 
     if type(master) == MasterPortfolio:
         master.loadData()
-        return jsonify(master.portfolio), 202
+        data = master.portfolio
+        response = Response(json.dumps(data, sort_keys=False), mimetype='application/json')
+        return response, 202
     
     return jsonify({'message':'Error returning Master portfolio json...'}), 404
     
