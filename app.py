@@ -1,22 +1,15 @@
-from flask import Flask, request, jsonify, abort, send_file, render_template, url_for, redirect, current_app, Response
-import pandas as pd
+from flask import Flask, request, jsonify, send_file, render_template, url_for, redirect, Response
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
 from io import BytesIO
-from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 from datetime import datetime
 import pprint
 import json
 
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.utils import secure_filename
-
-# Import for Coinbase
-from cb import coinbasePortfolio
-# Import for Gemini
-from gemini import geminiPortfolio
-# Import for Ledger
-from ledger import ledgerPortfolio
 # Import Portfolio classes
-from portfolioClass import Portfolio, MasterPortfolio
+from portfolioClass import Portfolio, MasterPortfolio, PortfolioManager
+
+pm = PortfolioManager()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
@@ -29,6 +22,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Models for SQLite Database
 class Upload(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(50))
@@ -40,14 +34,7 @@ class ApiKey(db.Model):
     api_key = db.Column(db.String(200), nullable=False)
     api_secret = db.Column(db.String(200), nullable=False)
 
-
-# Global variables for exchange Portfolio classes
-coinbase = None
-gemini = None
-ledger = None
-master = None
-accounts = []
-
+# Post Coinbase Keys
 @app.route('/api/coinbase/keys', methods=['POST'])
 def set_coinbase_keys():
     data = request.get_json()
@@ -70,35 +57,10 @@ def set_coinbase_keys():
         db.session.add(new_coinbase_keys)
     db.session.commit()
 
-    init_coinbase()
+    pm.initCoinbase(key, secret)
     return jsonify({'message':'Coinbase keys updated successfully'}), 201
 
-def init_coinbase():
-    global coinbase, accounts
-
-    coinbase_keys = ApiKey.query.filter_by(service='Coinbase').first()
-
-    if coinbase_keys and coinbase_keys.api_key and coinbase_keys.api_secret:
-
-        if coinbase in accounts:
-            accounts.remove(coinbase)
-
-        key = coinbase_keys.api_key
-        secret = coinbase_keys.api_secret
-
-        try:
-            coinbase = coinbasePortfolio(key, secret)
-            print('Coinbase portfolio initialized successfully')
-        except RequestsJSONDecodeError:
-            #return jsonify({'message':'api_key or api_secret for Coinbase was invalid.'}), 404
-            abort(404, 'api_key or api_secret for Coinbase was invalid.')
-        
-        accounts.append(coinbase)
-        print("coinbase account appended to accounts")
-    else:
-        abort(404, 'api_key or api_secret for Coinbase was not uploaded.')
-
-
+# Post Gemini Keys
 @app.route('/api/gemini/keys', methods=['POST'])
 def set_gemini_keys():
     data = request.get_json()
@@ -120,35 +82,10 @@ def set_gemini_keys():
         db.session.add(new_gemini_keys)
     db.session.commit()
 
-    init_gemini()
+    pm.initGemini(key, secret)
     return jsonify({'message':'Gemini keys updated successfully'}), 201
 
-def init_gemini():
-    global gemini, accounts
-
-    gemini_keys = ApiKey.query.filter_by(service='Gemini').first()
-
-    if gemini_keys and gemini_keys.api_key and gemini_keys.api_secret:
-
-        if gemini in accounts:
-            accounts.remove(gemini)
-
-        key = gemini_keys.api_key
-        secret = gemini_keys.api_secret
-
-        try:
-            gemini = geminiPortfolio(key, secret)
-            print('Gemini portfolio initialized successfully')
-        except Exception:
-            #return jsonify({'message':'api_key or api_secret for Gemini was invalid.'}), 404
-            abort(404, 'api_key or api_secret for Gemini was invalid.')
-        
-        accounts.append(gemini)
-        print("gemini account appended to accounts")
-    else:
-        abort(404, 'api_key or api_secret for Gemini was not uploaded.')
-
-
+# Post Ledger CSV Data
 @app.route('/api/ledger/upload-csv', methods=['POST', 'GET'])
 def upload_ledger_csv():
     if request.method == 'POST':
@@ -179,7 +116,12 @@ def upload_ledger_csv():
                 db.session.add(upload)
             db.session.commit()
 
-            init_ledger()
+            upload = Upload.query.order_by(Upload.id.desc()).first()
+            if upload is None:
+                return jsonify({'error': 'No ledger file found'}), 404
+            file_data = BytesIO(upload.data)
+
+            pm.initLedger(file_data)
             return redirect(url_for('download_page'))
         
         return 'Upload failed.'
@@ -190,119 +132,97 @@ def upload_ledger_csv():
 def download_page():
     return render_template('download.html')
 
-def init_ledger():
-    upload = Upload.query.order_by(Upload.id.desc()).first()
-
-    if upload is None:
-        return jsonify({'error': 'No ledger file found'}), 404
-    
-    file_data = BytesIO(upload.data)
-    
-    global ledger, accounts
-
-    if ledger in accounts:
-        accounts.remove(ledger)
-
-    try:
-        ledger = ledgerPortfolio(file_data)
-        print('Ledger portfolio initialized successfully')
-    except Exception:
-        abort(404, 'CSV file for Ledger was invalid.')
-    
-    accounts.append(ledger)
-    print("ledger account appended to accounts")
-
-def init_master():
-    global master, accounts
-
-    if len(accounts) == 0:
-        return jsonify({'message':'Accounts are invalid...'}), 404
-
-    master = MasterPortfolio(accounts)
-
-
+# Return Coinbase Loaded JSON
 @app.route('/api/coinbase/json', methods=['GET'])
 def coinbase_json():
-    if type(coinbase) == Portfolio:
-        coinbase.loadData()
-        data = coinbase.portfolio
+    if type(pm.coinbase) == Portfolio:
+        pm.coinbase.loadData()
+        data = pm.coinbase.portfolio
         response = Response(json.dumps(data, sort_keys=False), mimetype='application/json')
         return response, 202
     
     return jsonify({'message':'Error returning Coinbase portfolio json...'}), 404
 
+# Return Coinbase Total Balance
 @app.route('/api/coinbase/total-balance', methods=['GET'])
 def coinbase_total_balance():
-    if type(coinbase) == Portfolio:
-        coinbase.loadData()
-        return jsonify({'balance':coinbase.totalBalance()}), 202
+    if type(pm.coinbase) == Portfolio:
+        pm.coinbase.loadData()
+        return jsonify({'balance':pm.coinbase.totalBalance()}), 202
 
     return jsonify({'message':'Error returning Coinbase balance...'}), 404
 
+# Return Gemini Loaded JSON
 @app.route('/api/gemini/json', methods=['GET'])
 def gemini_json():
-    if type(gemini) == Portfolio:
-        gemini.loadData()
-        data = gemini.portfolio
+    if type(pm.gemini) == Portfolio:
+        pm.gemini.loadData()
+        data = pm.gemini.portfolio
         response = Response(json.dumps(data, sort_keys=False), mimetype='application/json')
         return response, 202
     
     return jsonify({'message':'Error returning Gemini portfolio json...'}), 404
 
+# Return Gemini Total Balance
 @app.route('/api/gemini/total-balance', methods=['GET'])
 def gemini_total_balance():
-    if type(gemini) == Portfolio:
-        gemini.loadData()
-        return jsonify({'balance':gemini.totalBalance()}), 202
+    if type(pm.gemini) == Portfolio:
+        pm.gemini.loadData()
+        return jsonify({'balance':pm.gemini.totalBalance()}), 202
 
     return jsonify({'message':'Error returning Gemini balance...'}), 404
 
+# Return Ledger Loaded JSON
 @app.route('/api/ledger/json', methods=['GET'])
 def ledger_json():
-    if type(ledger) == Portfolio:
-        ledger.loadData()
-        data = ledger.portfolio
+    if type(pm.ledger) == Portfolio:
+        pm.ledger.loadData()
+        data = pm.ledger.portfolio
         response = Response(json.dumps(data, sort_keys=False), mimetype='application/json')
         return response, 202
     
     return jsonify({'message':'Error returning Ledger portfolio json...'}), 404
 
+# Return Ledger Total Balance
 @app.route('/api/ledger/total-balance', methods=['GET'])
 def ledger_total_balance():
-    if type(ledger) == Portfolio:
-        ledger.loadData()
-        return jsonify({'balance':ledger.totalBalance()}), 202
+    if type(pm.ledger) == Portfolio:
+        pm.ledger.loadData()
+        return jsonify({'balance':pm.ledger.totalBalance()}), 202
     
     return jsonify({'message':'Error returning Ledger balance...'}), 404
 
+# Return Master Loaded JSON (w/ all assets)
 @app.route('/api/master/json', methods = ['GET'])
 def master_json():
-    init_master()
+    pm.initMaster()
 
-    if type(master) == MasterPortfolio:
-        master.loadData()
-        data = master.portfolio
+    if type(pm.master) == MasterPortfolio:
+        pm.master.loadData()
+        data = pm.master.portfolio
         response = Response(json.dumps(data, sort_keys=False), mimetype='application/json')
         return response, 202
     
     return jsonify({'message':'Error returning Master portfolio json...'}), 404
     
+# Return Total Balance of All Assets
 @app.route('/api/master/total-balance', methods=['GET'])
 def master_total_balance():
-    init_master()
+    pm.initMaster()
 
-    if type(master) == MasterPortfolio:
-        master.loadData()
-        return jsonify({'balance':master.totalBalance()}), 202
+    if type(pm.master) == MasterPortfolio:
+        pm.master.loadData()
+        return jsonify({'balance':pm.master.totalBalance()}), 202
 
     return jsonify({'message':'Error returning Master balance...'}), 404
 
+# Export Master xlsx of All Assets
 @app.route('/api/master/download-xlsx', methods = ['GET'])
 def download_master_xlsx():
-    init_master()
-    master.loadData()
+    pm.initMaster()
+    pm.master.loadData()
 
-    excel_file = master.pandasToExcel_api()
+    excel_file = pm.master.pandasToExcel_api()
 
     current_time = datetime.now().strftime("%m-%d-%Y %H:%M")
     fileName = f'master_portfolio_{current_time}.xlsx'
@@ -311,9 +231,6 @@ def download_master_xlsx():
                      as_attachment=True, 
                      attachment_filename=fileName,
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-
-# Singleton Design Pattern
 
 if __name__ == "__main__":
     with app.app_context():
