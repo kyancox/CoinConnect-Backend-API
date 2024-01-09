@@ -313,6 +313,8 @@ def download_master_xlsx():
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
+# Singleton Design Pattern
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
