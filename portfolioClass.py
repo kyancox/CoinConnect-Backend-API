@@ -3,11 +3,16 @@ import cmc as cmc
 
 class Portfolio:
 
-    def __init__(self, accountName, portfolio):
+    def __init__(self, accountName, portfolio, dataLoaded=False):
         self.accountName = accountName
         if type(portfolio) != dict: raise TypeError()
-        self.portfolio = {key:float(value) for key, value in portfolio.items()}
-        self.dataLoaded = False
+        self.dataLoaded = dataLoaded
+        if dataLoaded:
+            self.portfolio = portfolio
+        else:
+            self.portfolio = {key:float(value) for key, value in portfolio.items()}
+            self.dataLoaded = dataLoaded
+            self.loadData()
 
     # Clean assets so that accounts with no amount of cryptocurrency (0) are removed
     def cleanAssets(self):
@@ -44,6 +49,13 @@ class Portfolio:
     def totalBalance(self):
         return "$" + str(sum([float(value[2]) for key, value in self.portfolio.items()])) + " USD"
 
+    # Requires loadData() to be called. 
+    def sortPortfolio(self):
+        sortedPortfolio = sorted(self.portfolio.items(), key = lambda coin: float(coin[1][2]), reverse = True)
+        sortedPortfolio = dict(sortedPortfolio)
+        
+        self.portfolio = sortedPortfolio
+
     def loadData(self):
         if self.dataLoaded: return
 
@@ -53,14 +65,6 @@ class Portfolio:
         self.loadBalance()
         self.sortPortfolio()
         self.dataLoaded = True
-
-
-    # Requires loadData() to be called. 
-    def sortPortfolio(self):
-        sortedPortfolio = sorted(self.portfolio.items(), key = lambda coin: float(coin[1][2]), reverse = True)
-        sortedPortfolio = dict(sortedPortfolio)
-        
-        self.portfolio = sortedPortfolio
         
     # Prints assets and all details of portfolio into terminal 
     def showAssets(self):
@@ -115,10 +119,13 @@ class MasterPortfolio(Portfolio):
 
         self.exchangeData = defaultdict(list)
         self.balances = defaultdict(float)
-        self.generateBalances()
 
+        
+        self.generateBalances()
         self.portfolio = dict(self.balances)
         super().__init__("Master", self.portfolio)
+
+        self.loadData()
 
     def generateBalances(self):
         for account in self.accounts:
