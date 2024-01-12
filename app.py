@@ -4,7 +4,7 @@ from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 from werkzeug.utils import secure_filename
 from io import BytesIO
 from datetime import datetime
-import pprint
+from pprint import pprint
 import json
 
 # Import for Coinbase
@@ -15,9 +15,6 @@ from gemini import geminiPortfolio
 from ledger import ledgerPortfolio
 # Import Portfolio classes
 from portfolioClass import Portfolio, MasterPortfolio
-#from portfolioManager import PortfolioManager
-
-#pm = PortfolioManager()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
