@@ -6,7 +6,7 @@ import uuid
 from requests.exceptions import JSONDecodeError as RequestsJSONDecodeError
 from werkzeug.utils import secure_filename
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from pprint import pprint
 import json
 
@@ -20,9 +20,11 @@ from ledger import ledgerPortfolio
 from portfolioClass import Portfolio, MasterPortfolio
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True, origins=['http://127.0.0.1:5500'])
+#CORS(app, supports_credentials=True)
 app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
+#app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 db = SQLAlchemy(app)
 
 ALLOWED_EXTENSIONS = {'csv'}
@@ -79,6 +81,8 @@ def set_coinbase_keys():
         session['session_id'] = str(uuid.uuid4())
 
     session_id = session['session_id']
+
+    print(session_id)
 
     coinbase_keys = ApiKey.query.filter_by(service='Coinbase', session_id=session['session_id']).first()
 
@@ -291,7 +295,15 @@ def init_ledger():
     # print("ledger account appended to accounts")
 
 def init_master():
-    session_id = session['session_id']
+
+    session_id = session.get('session_id')  # Use .get to avoid KeyError
+    if not session_id:
+        # Handle the missing session_id appropriately
+        return jsonify({'message': 'Session ID not found. Please start a new session.'}), 400
+    
+    print(session_id)
+
+
     coinbaseModel = PortfolioDB.query.filter_by(account='Coinbase', session_id=session_id).first()
     geminiModel = PortfolioDB.query.filter_by(account='Gemini', session_id=session_id).first()
     ledgerModel = PortfolioDB.query.filter_by(account='Ledger', session_id=session_id).first()
@@ -317,7 +329,7 @@ def init_master():
     excel_bytes_io = master.pandasToExcel_api()
     #excel_bytes_io.seek(0)
 
-    masterModel = MasterDB.query.first()
+    masterModel = MasterDB.query.filter_by(session_id=session_id).first()
 
     print('Ledger portfolio initialized successfully')
 
@@ -334,6 +346,8 @@ def init_master():
         )
         db.session.add(masterModel)
     db.session.commit()
+
+    print("MASTER PORTFOLIO INITIALIZED")
     
 
 # Return Coinbase Loaded JSON
@@ -407,7 +421,12 @@ def ledger_total_balance():
 def master_json():
     init_master()
 
-    master = MasterDB.query.filter_by(session_id=session['session_id']).first()
+    session_id = session.get('session_id', None)
+    if session_id is None:
+            return jsonify({'message': 'Session ID is missing. Please ensure your session is started and the cookie is sent.'}), 401
+    print(session_id)
+
+    master = MasterDB.query.filter_by(session_id=session_id).first()
 
     if master:
         data = master.portfolio_data
