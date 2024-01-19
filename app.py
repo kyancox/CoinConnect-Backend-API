@@ -307,7 +307,9 @@ def init_master():
     coinbaseModel = PortfolioDB.query.filter_by(account='Coinbase', session_id=session_id).first()
     geminiModel = PortfolioDB.query.filter_by(account='Gemini', session_id=session_id).first()
     ledgerModel = PortfolioDB.query.filter_by(account='Ledger', session_id=session_id).first()
+
     accounts = []
+    
     if coinbaseModel:
         portfolio_dict = json.loads(coinbaseModel.portfolio_data)
         coinbase = Portfolio(coinbaseModel.account, portfolio_dict, True)
@@ -320,6 +322,8 @@ def init_master():
         portfolio_dict = json.loads(ledgerModel.portfolio_data)
         ledger = Portfolio(ledgerModel.account, portfolio_dict, True)
         accounts.append(ledger)
+
+    print(f'accounts len: {len(accounts)}')
 
     if len(accounts) == 0:
         return jsonify({'message':'Accounts are invalid...'}), 404
