@@ -24,7 +24,7 @@ CORS(app, supports_credentials=True, origins=['http://127.0.0.1:5500'])
 #CORS(app, supports_credentials=True)
 app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
-#app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 db = SQLAlchemy(app)
 
 ALLOWED_EXTENSIONS = {'csv'}
@@ -364,7 +364,7 @@ def coinbase_json():
         response = Response(data, mimetype='application/json')
         return response, 202
     
-    return jsonify({'message':'Error returning Coinbase portfolio json...'}), 404
+    return jsonify({'message':'Error returning Coinbase portfolio.\n\nCoinbase info may not have been uploaded.'}), 404
 
 # Return Coinbase Total Balance
 @app.route('/api/coinbase/total-balance', methods=['GET'])
@@ -374,7 +374,7 @@ def coinbase_total_balance():
     if coinbase:
         return jsonify({'balance':coinbase.total_balance}), 202
 
-    return jsonify({'message':'Error returning Coinbase balance...'}), 404
+    return jsonify({'message':'Error returning Coinbase balance.\n\nCoinbase info may not have been uploaded.'}), 404
 
 # Return Gemini Loaded JSON
 @app.route('/api/gemini/json', methods=['GET'])
@@ -386,7 +386,7 @@ def gemini_json():
         response = Response(data, mimetype='application/json')
         return response, 202
     
-    return jsonify({'message':'Error returning Gemini portfolio json...'}), 404
+    return jsonify({'message':'Error returning Gemini portfolio.\n\nGemini info may not have been uploaded.'}), 404
 
 # Return Gemini Total Balance
 @app.route('/api/gemini/total-balance', methods=['GET'])
@@ -396,7 +396,7 @@ def gemini_total_balance():
     if gemini:
         return jsonify({'balance':gemini.total_balance}), 202
 
-    return jsonify({'message':'Error returning Gemini balance...'}), 404
+    return jsonify({'message':'Error returning Gemini balance.\n\nGemini info may not have been uploaded.'}), 404
 
 # Return Ledger Loaded JSON
 @app.route('/api/ledger/json', methods=['GET'])
@@ -408,7 +408,7 @@ def ledger_json():
         response = Response(data, mimetype='application/json')
         return response, 202
     
-    return jsonify({'message':'Error returning Ledger portfolio json...'}), 404
+    return jsonify({'message':'Error returning Ledger portfolio.\n\nLedger info may not have been uploaded.'}), 404
 
 # Return Ledger Total Balance
 @app.route('/api/ledger/total-balance', methods=['GET'])
@@ -418,7 +418,7 @@ def ledger_total_balance():
     if ledger:
         return jsonify({'balance':ledger.total_balance}), 202
     
-    return jsonify({'message':'Error returning Ledger balance...'}), 404
+    return jsonify({'message':'Error returning Ledger balance.\n\nLedger info may not have been uploaded.'}), 404
 
 # Return Master Loaded JSON (w/ all assets)
 @app.route('/api/master/json', methods = ['GET'])
@@ -427,7 +427,7 @@ def master_json():
 
     session_id = session.get('session_id', None)
     if session_id is None:
-            return jsonify({'message': 'Session ID is missing. Please ensure your session is started and the cookie is sent.'}), 401
+            return jsonify({'message': 'Session ID is missing.\n\nPlease ensure your session is started and the cookie is sent.'}), 401
     print(session_id)
 
     master = MasterDB.query.filter_by(session_id=session_id).first()
@@ -437,7 +437,7 @@ def master_json():
         response = Response(data, mimetype='application/json')
         return response, 202
     
-    return jsonify({'message':'Error returning Master portfolio json...'}), 404
+    return jsonify({'message':'Error returning Master portfolio json.'}), 404
     
 # Return Total Balance of All Assets
 @app.route('/api/master/total-balance', methods=['GET'])
@@ -449,7 +449,7 @@ def master_total_balance():
     if master:
         return jsonify({'balance':master.total_balance}), 202
 
-    return jsonify({'message':'Error returning Master balance...'}), 404
+    return jsonify({'message':'Error returning Master balance.'}), 404
 
 # Export Master xlsx of All Assets
 @app.route('/api/master/download-xlsx', methods = ['GET'])
