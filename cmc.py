@@ -1,13 +1,12 @@
 from requests import Request, Session
 from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
-from cmc_sec import api_key
 import json
 import pprint
 
 # CoinMarketCap API to get real-time prices
 
 url = 'https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest'
-
+api_key = '9b27d22e-db5b-4878-85d1-39814c5fdccd'
 
 def getPrices(dictionary):
 

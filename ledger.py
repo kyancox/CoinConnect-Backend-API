@@ -1,7 +1,5 @@
 import pandas as pd
 from portfolioClass import Portfolio
-from ledger_sec import filePath
-
 
 def ledgerPortfolio(file_data):
 
@@ -17,8 +15,3 @@ def ledgerPortfolio(file_data):
     ledgerAssets = df_filtered.groupby('Currency Ticker')['Adjusted Amount'].sum().to_dict()
 
     return Portfolio("Ledger", ledgerAssets)
-    
-ledger = ledgerPortfolio(filePath)
-
-if __name__ == "__main__":
-    ledger.showAssets()

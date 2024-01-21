@@ -1,7 +1,7 @@
 from master import master
-from cb import coinbase
-from gemini import gemini
-from ledger import ledger
+from cb_sec import coinbase
+from gemini_sec import gemini
+from ledger_sec import ledger
 
 # Checks if user input is a valid integer, and converts input from string to integer.  
 def read_valid_int(prompt, min, max):

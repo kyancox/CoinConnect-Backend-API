@@ -5,7 +5,6 @@ import base64
 import hmac
 import hashlib
 import datetime, time
-from gemini_sec import api_key as my_api_key, api_secret as my_api_secret
 import pprint
 
 from portfolioClass import Portfolio
@@ -43,11 +42,4 @@ def geminiPortfolio(api_key, api_secret):
     balances = {balances[i]['currency']:balances[i]['amount'] for i in range(1, len(balances))}
 
     return Portfolio("Gemini", balances)
-
-gemini = geminiPortfolio(my_api_key, my_api_secret)
-
-if __name__ == '__main__':
-    gemini.showAssets()
-
-
 
