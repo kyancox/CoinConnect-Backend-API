@@ -20,11 +20,11 @@ from ledger import ledgerPortfolio
 from portfolioClass import Portfolio, MasterPortfolio
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=['http://127.0.0.1:5500'])
+CORS(app, supports_credentials=True, origins=['http://127.0.0.1:5500', 'https://coinconnect.netlify.app/'])
 #CORS(app, supports_credentials=True)
 app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
 db = SQLAlchemy(app)
 
 ALLOWED_EXTENSIONS = {'csv'}
@@ -62,6 +62,10 @@ class MasterDB(db.Model):
     excel_bytes = db.Column(db.LargeBinary)
     session_id = db.Column(db.String(200), nullable=False)  # Link to the session
 
+
+@app.route('/')
+def root():
+    return 'Flask API for https://github.com/kyancox/CoinConnect-Backend-API'
 
 # Post Coinbase Keys
 @app.route('/api/coinbase/keys', methods=['POST'])
