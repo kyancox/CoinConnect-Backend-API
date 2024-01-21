@@ -309,6 +309,7 @@ def init_master():
         # Handle the missing session_id appropriately
         return jsonify({'message': 'Session ID not found. Please start a new session.'}), 400
     
+    print("init_master session_id:")
     print(session_id)
 
 
