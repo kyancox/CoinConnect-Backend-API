@@ -63,9 +63,9 @@ class MasterDB(db.Model):
     session_id = db.Column(db.String(200), nullable=False)  # Link to the session
 
 
-@app.before_first_request
-def create_tables():
+with app.app_context():
     db.create_all()
+
 
 @app.route('/')
 def root():
