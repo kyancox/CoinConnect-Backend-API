@@ -20,7 +20,7 @@ from ledger import ledgerPortfolio
 from portfolioClass import Portfolio, MasterPortfolio
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=['http://127.0.0.1:5500', 'https://coinconnect.netlify.app/'])
+CORS(app, supports_credentials=True, origins=['http://127.0.0.1:5500', 'http://localhost:5500/', 'https://coinconnect.netlify.app/'])
 #CORS(app, supports_credentials=True)
 app.secret_key = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
@@ -307,6 +307,7 @@ def init_master():
     session_id = session.get('session_id')  # Use .get to avoid KeyError
     if not session_id:
         # Handle the missing session_id appropriately
+        print('Session ID not found in init_master()')
         return jsonify({'message': 'Session ID not found. Please start a new session.'}), 400
     
     print("init_master session_id:")
