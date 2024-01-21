@@ -161,6 +161,8 @@ def set_gemini_keys():
 
     session_id = session['session_id']
 
+    print(session_id)
+
     gemini_keys = ApiKey.query.filter_by(service='Gemini', session_id=session_id).first()
 
     if gemini_keys:
