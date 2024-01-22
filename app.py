@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from pprint import pprint
 import json
 
+# https://stackoverflow.com/questions/70627684/flask-sessions-not-persistent-between-requests-from-cross-domains
+
 # Import for Coinbase
 from cb import coinbasePortfolio
 # Import for Gemini
@@ -20,9 +22,10 @@ from ledger import ledgerPortfolio
 from portfolioClass import Portfolio, MasterPortfolio
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=['http://127.0.0.1:5500', 'http://localhost:5500', 'https://coinconnect.netlify.app'])
+CORS(app, supports_credentials=True, origins=['http://127.0.0.1:5500', 'http://localhost:5500', 'https://www.coinmerge.co', 'https://coinconnect.netlify.app'])
 #CORS(app, supports_credentials=True)
 app.secret_key = os.urandom(24)
+app.config['SESSION_COOKIE_DOMAIN'] = '.coinmerge.co'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db' 
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)
 db = SQLAlchemy(app)
