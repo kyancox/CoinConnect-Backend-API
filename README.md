@@ -1,10 +1,14 @@
-# Coinbase, Gemini, and Ledger Live Assets in Terminal
+# api.coinmerge.co
 
-## Technologies Used
-APIs: Coinbase REST API, Gemini REST API, CoinMarketCap REST API
+## Overview
+The CoinMerge Backend API powers the core functionality of the CoinMerge web-app, a unified cryptocurrency portfolio tracker. This API integrates with Coinbase, Gemini, and Ledger Live, enabling users to view their entire cryptocurrency portfolio in one centralized location. It leverages Python and Flask to create a robust RESTful API architecture, adhering to best practices in Object-Oriented Programming (OOP), specifically utilizing inheritance and composition principles.
 
-Python Libraries: pandas, xlsxwriter, datetime, collections, pprint, requests, json
+## Features
+Exchange Integration: Utilizes REST APIs from Coinbase and Gemini to fetch user asset data. For Ledger Live, it parses the Operations History CSV to account for assets stored on Ledger devices.
+Real-time Pricing: Fetches real-time cryptocurrency prices through the CoinMarketCap API, ensuring accurate portfolio valuation.
+Security: Implements secure authentication mechanisms for API key and secret management, allowing safe user interactions with their exchange accounts.
 
-## Description (outdated)
-
-This project uses the Coinbase API V2 partnered with the Coinbase API Python Library, along with the CoinMarketCapAPI. This project shows your Coinbase accounts in the command line, detailing the amount of cryptocurrency you have for each asset, your current balance for that asset, and the real-time price which is fetched using the CoinMarketCap API. 
+## Technologies
+Backend: Python, Flask
+Frontend Integration: Designed to work seamlessly with a frontend built using HTML, CSS, and JavaScript.
+Data Handling: Employs OOP principles for efficient data management and API response handling.
