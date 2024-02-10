@@ -14,4 +14,12 @@ def ledgerPortfolio(file_data):
 
     ledgerAssets = df_filtered.groupby('Currency Ticker')['Adjusted Amount'].sum().to_dict()
 
+    new = {}
+
+    for key, value in ledgerAssets.items():
+        if '_' not in key:
+            new[key] = value
+
+    ledgerAssets = new
+
     return Portfolio("Ledger", ledgerAssets)
