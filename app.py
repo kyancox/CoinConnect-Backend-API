@@ -308,7 +308,7 @@ def init_ledger():
         print('Ledger portfolio initialized successfully')
         return jsonify({'message': 'Ledger CSV updated successfully.'}), 201
     except Exception:
-        return jsonify({'message': 'CSV file for Ledger was invlaid.'}), 404
+        return jsonify({'message': 'CSV file for Ledger was invalid.'}), 404
     
     # accounts.append(ledger)
     # print("ledger account appended to accounts")

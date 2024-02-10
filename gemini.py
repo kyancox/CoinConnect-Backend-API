@@ -12,7 +12,7 @@ from portfolioClass import Portfolio
 def geminiPortfolio(api_key, api_secret):
     url = "https://api.gemini.com/v1/balances"
 
-    api_secret = api_secret.encode()
+    api_secret = str(api_secret).encode()
 
     t = datetime.datetime.now()
     payload_nonce = time.time()
