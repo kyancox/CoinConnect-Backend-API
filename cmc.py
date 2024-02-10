@@ -36,7 +36,12 @@ def getPrices(dictionary):
         data = data['data']
 
         for i in range(len(keys)):
-            coinPrice = data[keys[i]][0]['quote']['USD']['price']
+            print(f'getPrices iteration: {str(i)}')
+            coinPrice = ""
+            try:
+                coinPrice = data[keys[i]][0]['quote']['USD']['price']
+            except Exception:
+                coinPrice = "0"
             prices.append(coinPrice)
         
     except(ConnectionError, Timeout, TooManyRedirects) as e:
@@ -71,8 +76,14 @@ def loadNames(dictionary):
         data = data['data']
 
         for i in range(len(keys)):
+            # IF NAME NOT FOUND, PUT A 'FILLER' NAME THAT SAYS 'NAME NOT FOUND' or '0'
+            print(f'loadNames iteration: {str(i)}')
             symbol = keys[i]
-            name = data[symbol][0]['name']
+            name = ""
+            try:
+                name = data[symbol][0]['name']
+            except Exception:
+                name = "Name Not Found"
             #coinPrice = data[keys[i]][0]['quote']['USD']['price']
             dictionary[symbol] = [name, dictionary[symbol]]
         
