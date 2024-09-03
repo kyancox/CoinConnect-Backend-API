@@ -1,14 +1,20 @@
-# api.coinmerge.co
+<h1 align="center">
+api.coinmerge.co
+</h1>
+<p align="center">
+The backend to <a href="https://coinmerge.co" target="_blank">coinmerge.co</a>, built with <a href="https://www.python.org/">Python</a>, <a href="https://flask.palletsprojects.com/en/2.0.x/">Flask</a>, <a href="https://pandas.pydata.org/">Pandas</a>, and <a href="https://www.sqlite.org/index.html">SQLite</a>. Backend deployed on <a href="https://render.com/">Render</a>.
 
-## Overview
-The CoinMerge Backend API powers the core functionality of the CoinMerge web-app, a unified cryptocurrency portfolio tracker. This API integrates with Coinbase, Gemini, and Ledger Live, enabling users to view their entire cryptocurrency portfolio in one centralized location. It leverages Python and Flask to create a robust RESTful API architecture, adhering to best practices in Object-Oriented Programming (OOP), specifically utilizing inheritance and composition principles.
+<p align="center">CoinMerge is a web app where you can view all of your cryptocurrency assets from <a href="https://www.coinbase.com/">Coinbase</a>, <a href="https://www.gemini.com/">Gemini</a>, and <a href="https://www.ledger.com/">Ledger Live</a> in one place. The app utilizes your API keys from your Coinbase and Gemini accounts, as well as a CSV file of your assets from Ledger Live.
+</p>
 
-## Features
-Exchange Integration: Utilizes REST APIs from Coinbase and Gemini to fetch user asset data. For Ledger Live, it parses the Operations History CSV to account for assets stored on Ledger devices.
-Real-time Pricing: Fetches real-time cryptocurrency prices through the CoinMarketCap API, ensuring accurate portfolio valuation.
-Security: Implements secure authentication mechanisms for API key and secret management, allowing safe user interactions with their exchange accounts.
+![demo](https://raw.githubusercontent.com/kyancox/kyancox.com/main/public/coinmergedemo.png)
 
-## Technologies
-Backend: Python, Flask
-Frontend Integration: Designed to work seamlessly with a frontend built using HTML, CSS, and JavaScript.
-Data Handling: Employs OOP principles for efficient data management and API response handling.
+## Tech Stack
+
+- <a href="https://www.python.org/">Python</a>
+- <a href="https://flask.palletsprojects.com/en/2.0.x/">Flask</a>
+- <a href="https://pandas.pydata.org/">Pandas</a>
+- <a href="https://www.sqlite.org/index.html">SQLite</a>
+- <a href="https://render.com/">Render</a>
+
+## Frontend Repository: <a href="https://github.com/kyancox/coinmerge.co" target="_blank">https://github.com/kyancox/coinmerge.co</a>
